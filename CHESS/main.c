@@ -12,6 +12,8 @@
 #include<SDL2/SDL_image.h>
 #include<SDL2/SDl_timer.h>
 #include<SDL2/SDL_rwops.h>
+#include<SDL2/SDL_mouse.h>
+//#include<SDL2/SDL_event.h>
 #include<assert.h>
 #include<stdio.h>
 #include<stdlib.h>
@@ -28,133 +30,7 @@
 
 #include "load_pieces.h"
 
-#define ARR_SIZE(X) (sizeof((X)) / sizeof((X[0])))
 
-void Fen_Loader(SDL_Renderer *renderer,Piece *pieces) {
-
-	//char start_position[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
-	//char start_position[] = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR";
-	char start_position[] = "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R";
-	size_t x = 0, y = 0, num_of_pices = 0;
-
-
-	for(size_t i = 0; i < ARR_SIZE(start_position); i++) {
-
-
-		//assert(num_of_pices <=  NUM_OF_PICES);
-		//if(x == 8) {
-			//x = 0;
-			//y++;
-			//}
-			printf("num of pices %d\n", (int)num_of_pices);
-
-		switch(start_position[i]) {
-
-			case 'r':
-				load_Black_Rook(renderer,pieces,num_of_pices, x++,y);
-				num_of_pices++;
-				break;
-
-			case 'R':
-				load_White_Rook(renderer,pieces,num_of_pices, x++,y);
-				num_of_pices++;
-				break;
-
-			case 'K':
-				load_White_King(renderer,pieces,num_of_pices, x++,y);
-				num_of_pices++;
-				break;
-			
-			case 'k':
-				load_Black_King(renderer,pieces,num_of_pices, x++,y);
-				num_of_pices++;
-				break;
-				
-			case 'Q':
-				load_White_Queen(renderer,pieces,num_of_pices, x++,y);
-				num_of_pices++;
-				break;
-				
-			case 'q':
-				load_Black_Queen(renderer,pieces,num_of_pices, x++,y);
-				num_of_pices++;
-				break;
-				
-			case 'B':
-				load_White_Bishop(renderer,pieces,num_of_pices, x++,y);
-				num_of_pices++;
-				break;	
-			
-			case 'b':
-				load_Black_Bishop(renderer,pieces,num_of_pices, x++,y);
-				num_of_pices++;
-				break;
-				
-			case 'N':
-				load_White_Knight(renderer,pieces,num_of_pices++, x++,y);
-				break;
-				
-			case 'n':
-				load_Black_Knight(renderer,pieces,num_of_pices, x++,y);
-				num_of_pices++;
-				break;
-				
-			case 'P':
-				load_White_Pawn(renderer,pieces,num_of_pices, x++,y);
-				num_of_pices++;
-				break;
-				
-			case 'p':
-				load_Black_Pawn(renderer,pieces,num_of_pices, x++,y);
-				num_of_pices++;
-				break;
-			
-			case '/':	
-				x = 0;
-				y++;
-				break;
-			
-			case '1':
-				x += 1;
-				break;
-				
-			case '2':
-				x += 2;
-				break;
-				
-			case '3':
-				x += 3;
-				break;
-				
-			case '4':
-				x += 4;
-				break;
-				
-			case '5':
-				x += 5;
-				break;
-				
-			case '6':
-				x += 6;
-				break;
-				
-			case '7':
-				x += 7;
-				break;
-			
-			case '8':
-				x	+= 8;
-				break;		
-			}
-			
-			
-				
-			
-		}
-
-
-
-	}
 
 
 void Draw_Board(SDL_Renderer *renderer) {
@@ -187,15 +63,67 @@ void Draw_Board(SDL_Renderer *renderer) {
 
 	}
 
+void Check_Is_Piece_Is_Dead(Piece *pieces, int X, int Y) {
 
-void Load_Pieces_Test(SDL_Renderer *renderer,Piece *pieces) {
-
-	size_t x = 0, y = 0, counter = 0;
-	load_White_King(renderer,pieces,counter++,x, y);
-	load_Black_King(renderer,pieces,counter++,x+=SQUER_SIZE, y);
-	load_White_Queen(renderer,pieces,counter++,x+=SQUER_SIZE, y);
-	load_Black_Queen(renderer,pieces,counter++,x+=SQUER_SIZE, y);
+	for(size_t i = 0; i < NUM_OF_PICES; i++) {
+		if((int)(pieces[i].position.x / SQUER_SIZE) == X && (int)(pieces[i].position.y / SQUER_SIZE) == Y){
+		
+			if(!pieces[i].is_piece_selected && !pieces[i].is_piece_eaten) {
+				printf("Eaten piece is %s na poziciji (%d %d) ",pieces[i].name,X,Y);
+				pieces[i].is_piece_eaten = TRUE;
+				}
+		}
 	}
+
+
+
+	}
+
+
+
+
+void Procss_Mouse_Input(Piece *pieces) {
+
+	int X = 0, Y = 0;
+	uint8_t check_Piece_Selection = TRUE;
+	SDL_GetMouseState(&X, &Y);
+	X = X / SQUER_SIZE;
+	Y = Y / SQUER_SIZE;
+	//printf("X =  %d Y = %d\n",X, Y);
+	for(size_t i = 0; i < NUM_OF_PICES; i++) {
+
+		if(pieces[i].is_piece_selected == TRUE) {
+			//SWITCH TRUE MOVES
+			pieces[i].position.x = X * SQUER_SIZE;
+			pieces[i].position.y = Y * SQUER_SIZE;
+			Check_Is_Piece_Is_Dead(pieces,X,Y);
+			pieces[i].is_piece_selected = FALSE;
+			check_Piece_Selection = FALSE;
+			}
+
+
+		}
+
+
+
+	//Processes mouse input in regardrs of a piece selection
+	for(size_t i = 0; i < NUM_OF_PICES && check_Piece_Selection; i++) {
+		//printf("%d\n",i);
+
+		if((int)(pieces[i].position.x / SQUER_SIZE) == X && (int)(pieces[i].position.y / SQUER_SIZE) == Y && !pieces[i].is_piece_eaten) {
+			for(size_t j = i; j < NUM_OF_PICES; j++) {
+				pieces[j].is_piece_selected  = FALSE;
+				//printf("%d\n", j);
+				}
+			pieces[i].is_piece_selected = TRUE;
+			printf("Selected pieces is %s na poziziji (%d %d)\n", pieces[i].name,X, Y);
+			break;
+
+			}
+		}
+
+	}
+
 
 
 
@@ -210,14 +138,27 @@ int main(int argc,char** argv) {
 	Fen_Loader(renderer,pieces);
 	system("pause");
 	while(1) {
-		SDL_RenderClear(renderer);
+		SDL_Event event;
+		if(SDL_PollEvent(&event)) {
+			//printf("nesto");
+			if(event.type == SDL_MOUSEBUTTONDOWN) {
+				Procss_Mouse_Input(pieces);
+				}
+			}
 
+
+		//
+		SDL_RenderClear(renderer);
 		Draw_Board(renderer);
-		system("pause");
-		for(size_t i = 0; i < 32; i++)
+		//system("pause");
+		for(size_t i = 0; i < 32; i++){
+			if(!pieces[i].is_piece_eaten)
 			SDL_RenderCopy(renderer, pieces[i].texture, NULL,&pieces[i].position);
+		}
+			
 		SDL_RenderPresent(renderer);
-		system("pause");
+		SDL_Delay(10);
+		//system("pause");
 		}
 
 
