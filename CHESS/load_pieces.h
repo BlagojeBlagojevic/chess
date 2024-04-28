@@ -1,5 +1,6 @@
 #ifndef LOAD_PIECES
 #define LOAD_PIECES
+#define asdad 
 #include<stdint.h>
 
 
