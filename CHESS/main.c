@@ -10,7 +10,7 @@
 #include<SDL2/SDL_clipboard.h>
 #include<SDL2/SDL_events.h>
 #include<SDL2/SDL_image.h>
-#include<SDL2/SDl_timer.h>
+//#include<SDL2/SDl_timer.h>
 #include<SDL2/SDL_rwops.h>
 #include<SDL2/SDL_mouse.h>
 //#include<SDL2/SDL_event.h>
@@ -26,10 +26,10 @@
 #define HEIGHT 8 * SQUER_SIZE
 
 #define GREEN  0x00FF0000
-#define WHITE  0xFFFFFFFF
+//#define WHITE_C  0xFFFFFFFF
 
 #include "load_pieces.h"
-
+#include "moves.h"
 
 
 
@@ -66,17 +66,15 @@ void Draw_Board(SDL_Renderer *renderer) {
 void Check_Is_Piece_Is_Dead(Piece *pieces, int X, int Y) {
 
 	for(size_t i = 0; i < NUM_OF_PICES; i++) {
-		if((int)(pieces[i].position.x / SQUER_SIZE) == X && (int)(pieces[i].position.y / SQUER_SIZE) == Y){
-		
+		if((int)(pieces[i].position.x / SQUER_SIZE) == X 
+			&& (int)(pieces[i].position.y / SQUER_SIZE) == Y
+			){	
 			if(!pieces[i].is_piece_selected && !pieces[i].is_piece_eaten) {
-				printf("Eaten piece is %s na poziciji (%d %d) ",pieces[i].name,X,Y);
+				//printf("Eaten piece is %s na poziciji (%d %d) ",pieces[i].name,X,Y);
 				pieces[i].is_piece_eaten = TRUE;
 				}
 		}
 	}
-
-
-
 	}
 
 
@@ -89,19 +87,20 @@ void Procss_Mouse_Input(Piece *pieces) {
 	SDL_GetMouseState(&X, &Y);
 	X = X / SQUER_SIZE;
 	Y = Y / SQUER_SIZE;
-	//printf("X =  %d Y = %d\n",X, Y);
+	
+	//PIECE MOVMENT CHECKING
 	for(size_t i = 0; i < NUM_OF_PICES; i++) {
-
-		if(pieces[i].is_piece_selected == TRUE) {
+		if(pieces[i].is_piece_selected == TRUE 
+			&& pieces[i].color == piece_to_move 
+			&& !pieces[i].is_piece_eaten){
 			//SWITCH TRUE MOVES
 			pieces[i].position.x = X * SQUER_SIZE;
 			pieces[i].position.y = Y * SQUER_SIZE;
 			Check_Is_Piece_Is_Dead(pieces,X,Y);
 			pieces[i].is_piece_selected = FALSE;
 			check_Piece_Selection = FALSE;
+			piece_to_move = (!piece_to_move);
 			}
-
-
 		}
 
 
@@ -110,13 +109,15 @@ void Procss_Mouse_Input(Piece *pieces) {
 	for(size_t i = 0; i < NUM_OF_PICES && check_Piece_Selection; i++) {
 		//printf("%d\n",i);
 
-		if((int)(pieces[i].position.x / SQUER_SIZE) == X && (int)(pieces[i].position.y / SQUER_SIZE) == Y && !pieces[i].is_piece_eaten) {
+		if((int)(pieces[i].position.x / SQUER_SIZE) == X 
+			&& (int)(pieces[i].position.y / SQUER_SIZE) == Y 
+			&& !pieces[i].is_piece_eaten) {
 			for(size_t j = i; j < NUM_OF_PICES; j++) {
 				pieces[j].is_piece_selected  = FALSE;
 				//printf("%d\n", j);
 				}
 			pieces[i].is_piece_selected = TRUE;
-			printf("Selected pieces is %s na poziziji (%d %d)\n", pieces[i].name,X, Y);
+			printf("\nSelected pieces is %s na poziziji (%d %d)\n", pieces[i].name,X, Y);
 			break;
 
 			}
@@ -136,18 +137,25 @@ int main(int argc,char** argv) {
 	Piece pieces[NUM_OF_PICES];
 	//Load_Pieces_Test(renderer,pieces);
 	Fen_Loader(renderer,pieces);
-	system("pause");
+	//system("pause");
 	while(1) {
 		SDL_Event event;
-		if(SDL_PollEvent(&event)) {
+		if(SDL_WaitEvent(&event)) {
 			//printf("nesto");
+			if(event.type == SDL_QUIT)
+				return 0;
+
 			if(event.type == SDL_MOUSEBUTTONDOWN) {
 				Procss_Mouse_Input(pieces);
+				//Get_Posible_Moves(pieces,&Move);
+				
+				
 				}
 			}
 
 
 		//
+		
 		SDL_RenderClear(renderer);
 		Draw_Board(renderer);
 		//system("pause");
