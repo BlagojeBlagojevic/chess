@@ -10,8 +10,8 @@
 typedef uint64_t U64;
 typedef uint32_t U32;
 enum {bishop, rook, knight, king, quean, pawn};        // REPRESENT PIECES
-enum{white, black, none};  														// REPRESENT PIECES   COLORS   
-enum{K = 1, k = 2, Q = 3, q = 4};        														 // REPRESENT CASTLING RIGHTS
+enum {white, black, none};  														// REPRESENT PIECES   COLORS
+enum {K = 1, k = 2, Q = 3, q = 4};        						 // REPRESENT CASTLING RIGHTS
 //SQUERS REPRESENTATION
 typedef enum {
 
@@ -41,8 +41,9 @@ const char *squers_name[] = {
 //REPRESENT ETARNAL ERROR INSIDE OF A ENGINE I MEAN NOT ERROR BUT UNEXEPECTED EVENTS
 //AND HANDLING OF THIS ERROR IF WE COUD CALLE THEM LIKE THAT IS HAPENING IN CODE
 typedef enum trap {
-	TRAP_MAGIC = -2,
+	TRAP_MAGIC = -1,
 	TRAP_ZERO = -1,
+	TRAP_OVERFLOW = -1,
 	TRAP_OK,
 	TRAP_FEN,   //THIS TRAP IS FOR FEN LOADING ERRROR
 	TRAP_NONINIT,
@@ -137,11 +138,21 @@ static U64 white_king = 0,   black_king = 0;
 const char start_positiona[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR ";
 //const char start_position[] = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR";
 #define start_fen_full "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+#define empty_board "8/8/8/8/8/8/8/8 w - - "
+#define start_positiona "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 "
+#define tricky_position "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1 "
+#define killer_position "rnbqkb1r/pp1p1pPp/8/2p1pP2/1P1P4/3P3P/P1P1P3/RNBQKBNR w KQkq e6 0 1"
+#define cmk_position "r2q1rk1/ppp2ppp/2n1bn2/2b1p3/3pP3/3P1NPP/PPP1NPB1/R1BQ1RK1 b - - 0 9 "
+
 
 // GLOBAL STATES INSIDE HOW TO MOVE IS ENPESAN POSIBLE AND IS CASTLE POSIBLE
 int side = white;
-int en_pesant;
-int castle[4];         // add values of 
+int en_pesant = -1;
+int castle[4];         // add values of
+//REPRESENT SQUERS ON WITCH WE COUD FIND PIECES
+static U64 position_white, position_black;
+#define position_all (position_white | position_black)
+
 //LOAD STARTING BITBOARDS  //start_position as a argument
 Trap fen_loader(char start_position[]) {
 
@@ -160,9 +171,13 @@ Trap fen_loader(char start_position[]) {
 	black_knight = 0;
 	black_pawn = 0;
 	black_quean = 0;
-	for(size_t j = 0;j < 4;j++)
+	//RESET CASTLE AND ENPESANT
+	for(size_t j = 0; j < 4; j++)
 		castle[j] = 0;
 	en_pesant = -1;
+	//RESET POSITION_WHITE AND POSITION_BLACK
+	position_white = 0;
+	position_black = 0;
 	//PARSING DISTRIBUTION OF PIECES ON BOARD
 	for(; start_position[i] != ' '; i++) {
 
@@ -175,36 +190,42 @@ Trap fen_loader(char start_position[]) {
 
 			//BLACK PIECES
 			case 'r': {
+					SET(position_black, position);
 					SET(black_rook, position);
 					position++;
 					break;
 					}
 
 			case 'n': {
+					SET(position_black, position);
 					SET(black_knight, position);
 					position++;
 					break;
 					}
 
 			case 'b': {
+					SET(position_black, position);
 					SET(black_bishop, position);
 					position++;
 					break;
 					}
 
 			case 'q': {
+					SET(position_black, position);
 					SET(black_quean, position);
 					position++;
 					break;
 					}
 
 			case 'k': {
+					SET(position_black, position);
 					SET(black_king, position);
 					position++;
 					break;
 					}
 
 			case 'p': {
+					SET(position_black, position);
 					SET(black_pawn, position);
 					position++;
 					break;
@@ -213,36 +234,42 @@ Trap fen_loader(char start_position[]) {
 			//WHITE PIECES
 
 			case 'R': {
+					SET(position_white, position);
 					SET(white_rook, position);
 					position++;
 					break;
 					}
 
 			case 'N': {
+					SET(position_white, position);
 					SET(white_knight, position);
 					position++;
 					break;
 					}
 
 			case 'B': {
+					SET(position_white, position);
 					SET(white_bishop, position);
 					position++;
 					break;
 					}
 
 			case 'Q': {
+					SET(position_white, position);
 					SET(white_quean, position);
 					position++;
 					break;
 					}
 
 			case 'K': {
+					SET(position_white, position);
 					SET(white_king, position);
 					position++;
 					break;
 					}
 
 			case 'P': {
+					SET(position_white, position);
 					SET(white_pawn, position);
 					position++;
 					break;
@@ -280,7 +307,7 @@ Trap fen_loader(char start_position[]) {
 			case '8':
 				position	+= 8;
 				break;
-			
+
 			default:
 				break;
 			}
@@ -288,63 +315,66 @@ Trap fen_loader(char start_position[]) {
 		}
 
 	int counter_white_spaces = 0;
-  for(;start_position[i] != '\0' && counter_white_spaces != 3;i++){
-		if(i == 1000){
+	for(; start_position[i] != '\0' && counter_white_spaces != 3; i++) {
+		if(i == 1000) {
 			return TRAP_FEN;
+			}
+
+		switch(start_position[i]) {
+
+			case 'w': {
+					side = white;
+					break;
+					}
+
+			case 'b': {
+					side = black;
+					break;
+					}
+
+			case 'K': {
+					castle[0] = 1;
+					break;
+					}
+
+			case 'k': {
+					castle[1] = 1;
+
+					break;
+					}
+			case 'Q': {
+					castle[2] = 1;
+					break;
+					}
+
+			case 'q': {
+					castle[3] = 1;
+					break;
+					}
+
+			case ' ': {
+					counter_white_spaces++;
+					break;
+					}
+
+			//we see what do
+			default: {
+
+					break;
+					}
+			}
+
+
 		}
-		
-  	switch(start_position[i]){
-  		
-			case 'w':{
-  			side = white;
-				break;
-			}
-			
-			case 'b':{
-				side = black;
-				break;
-			}
-			
-			case 'K':{
-				castle[0] = 1;
-				break;
-			}
-			
-			case 'k':{
-				castle[1] = 1;
-				
-				break;
-			}
-			case 'Q':{
-				castle[2] = 1;
-				break;
-			}
-			
-			case 'q':{
-				castle[3] = 1;
-				break;
-			}
-			
-			case ' ':{
-				counter_white_spaces++;
-				break;
-			}
-			
-  		//we see what do
-   		default: {
-   			
-				break;
-			 }
-		}
-  	
-  	
-	}
 	// PROCES ANPESANT
-	
-	if(start_position[i]!= '-'){
+
+	if(start_position[i]!= '-') {
 		en_pesant = (start_position[i] - 'a')  + (8 -  (start_position[i+1] - '0')) * 8 ;
-		en_pesant = en_pesant; 
+		en_pesant = en_pesant;
 		//printf("x %c, y %d",start_position[i] - 'a' + 'a', (8 -  (start_position[i+1] - '0')));
+		}
+	else{
+		en_pesant = -1;
 	}
 
 	return TRAP_OK;
@@ -357,11 +387,11 @@ void print_board() {
 	printf("\n=================================================\n\n");
 	if(!side)
 		printf("\t\t BOARD, to move white\n");
-	else 
+	else
 		printf("\t\t BOARD, to move black\n");
-		printf("Castling rights K = %d, k = %d, Q = %d,  q = %d \n", castle[0], castle[1], castle[2], castle[3]);
-		if(en_pesant != -1 && en_pesant < 64)
-			printf("En_pesant %s\n", squers_name[en_pesant]);
+	printf("Castling rights K = %d, k = %d, Q = %d,  q = %d \n", castle[0], castle[1], castle[2], castle[3]);
+	if(en_pesant != -1 && en_pesant < 64)
+		printf("En_pesant %s\n", squers_name[en_pesant]);
 	printf("\n=================================================\n\n");
 	for(size_t  i = 0; i < 64; i++) {
 
@@ -1301,7 +1331,7 @@ static inline U64 get_rook_moves_magic(int square, U64 occupancy) {
 	occupancy *= rook_magic_numbers[square];
 	occupancy >>= 64 - rook_relevant[square];
 
-	//ERROR I MEAN THIIS IS TEM FIX
+	//ERROR I MEAN THIIS IS TEM FIX BUT IS WORKING
 	return (rook_attacks[square][occupancy] & utiliti_rook[square]);
 	}
 
@@ -1313,3 +1343,624 @@ static inline U64 get_quean_moves_magic(int squere, U64 pieces) {
 	return (b_moves | r_moves);
 
 	}
+
+//THIS IS SECTION WITCH REPRESENT IS SQUARE ATACKED BY PIECE
+//THIS TYPE OF FUNCTION WILL BE USED AS A CHECKING FOR CHESS AND IN BOARD EVALUATION
+//MAYBE GO WITH SEPARETE IMPLEMENTATION
+
+static inline int check_is_square_attacked(int side, int square) {
+
+	//PROBOBLY NO THIS
+	if(square > 63 && square < 0) {
+		printf("OVERFLOW!!!\n");
+		return TRAP_OVERFLOW;
+		}
+
+
+
+	if((side == white) && (black_pawn_attack_table[square] & white_pawn)) return 1;
+
+	if((side == black) && (white_pawn_attack_table[square] & black_pawn)) return 1;
+
+	if (knight_attack_table[square] & ((side == white) ? white_knight : black_knight)) return 1;
+
+	if(get_bishop_moves_magic(square, position_all) & ((side == white) ? white_bishop : black_bishop)) return 1;
+
+	if(get_rook_moves_magic(square, position_all) & ((side == white) ? white_rook : black_rook)) return 1;
+
+	if(get_quean_moves_magic(square, position_all) & ((side == white) ? white_quean : black_quean)) return 1;
+
+	if(king_attack_table[square] & ((side == white) ? white_king : black_king)) return 1;
+
+	return 0;
+
+	}
+
+int print_is_square_attacked(int side, int square) {
+	// print_is_square_attacked(black, c6);
+	int is = check_is_square_attacked(side, square);
+	if(is == -1)
+		return TRAP_OVERFLOW;
+
+	else if(is) {
+		print_board();
+		printf("\nSquare attacked %s\n ", squers_name[square]);
+
+		}
+	else {
+		print_board();
+		printf("\nSquare is not attacked %s\n ", squers_name[square]);
+		}
+
+	}
+
+
+//GENERATE MOVES MAIN FUNCTION WITCH GENERATES MOVES
+//ACORDING TO CHESS PROGRAMING WIKI MAX AMOUNT OF MOVES IS 218
+//PROBOBLY WE WILL HAVE SOME TYPE OF STRUCTURE IN WITCH WE WILL STORE MOVES
+
+#define LOG_MOVES_PAWN    1
+#define LOG_MOVES_KING    1
+#define LOG_MOVES_KNIGHT  1
+#define LOG_MOVES_BISHOP  1
+#define LOG_MOVES_ROOK    1
+#define LOG_MOVES_QUEAN   1
+
+static inline void generate_posible_moves() {
+
+	static int target, source; // SQUER WITCH MOVE STARTS FROM AND WHER TO GO
+
+	static U64 bitboard, attacks;
+
+	//white pawn
+	if(side == white) {
+
+		bitboard = white_pawn;
+		while(bitboard) {
+			//system("pause");
+			source = LSB(bitboard);
+			target = source - 8;   //ONE SQUARE FORWARD DIFERENCS IS 8
+#if LOG_MOVES_PAWN
+			//printf("source %s target %s\n",squers_name[source], squers_name[target]);
+#endif
+			//FORWARD MOVE
+			//IF NOTING IS IN FORWARD SQUARE AND WE ARE NOT OUT OF BOARD
+			if(!(target < 0)  && !GET((position_all), target)) {
+				//printf("Nesto");
+
+				// GENERATE PROMTION WE AS WHITE CAN PROMOTE PIECES IF THER ARE IN 7 RANK
+				if(source <= h7 && source >= a7 ) {
+#if LOG_MOVES_PAWN
+					printf("white pawn promoted to q %s%s\n",squers_name[source], squers_name[target]);
+					printf("white pawn promoted to n %s%s\n",squers_name[source], squers_name[target]);
+					printf("white pawn promoted to r %s%s\n",squers_name[source], squers_name[target]);
+					printf("white pawn promoted to b %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				//ONE AND TWO FORWARD MOVES
+				else {
+					//CHECK ON TOP
+#if LOG_MOVES_PAWN
+					printf("white pawn moved to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					//CHECK IF TWO MOVES FORWARD IS POSIBLE
+					if(source <= h2 && source >= a2 && (!GET((position_all), (target - 8))));
+#if LOG_MOVES_PAWN
+					printf("white pawn moved 2 to %s%s\n",squers_name[source], squers_name[target - 8]);
+#endif
+					}
+				}
+			// CAPTURES
+			attacks  = white_pawn_attack_table[source] & position_black; // THIS IS CHECK IS THER A PIECE ON ATTACKED SQUERS
+			//print_bitboard(attacks);
+			while(attacks) {
+				//source alredy init
+				target = LSB(attacks);
+				// GENERATE PROMTION WE AS WHITE CAN PROMOTE PIECES IF THER ARE IN 7 RANK
+				if(source <= h7 && source >= a7) {
+#if LOG_MOVES_PAWN
+					printf("white pawn capture promoted to q %s%s\n",squers_name[source], squers_name[target]);
+					printf("white pawn capture promoted to n %s%s\n",squers_name[source], squers_name[target]);
+					printf("white pawn capture promoted to r %s%s\n",squers_name[source], squers_name[target]);
+					printf("white pawn capture promoted to b %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				//ONE AND TWO FORWARD MOVES
+				else {
+					//CHECK ON TOP
+#if LOG_MOVES_PAWN
+					printf("white pawn capture to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+				POP(attacks, target);
+				}
+
+			//ENPESANT
+			if(en_pesant != -1) {
+				U64 en =  white_pawn_attack_table[source] & (1 << en_pesant);
+				//print_bitboard(en);
+				//system("pause");
+
+				if(en) {
+					int target_en = LSB(en);
+#if LOG_MOVES_PAWN
+					printf("white pawn capture_EN to %s%s\n",squers_name[source], squers_name[target_en]);
+#endif
+					}
+
+				}
+			POP(bitboard, source);
+			}
+
+
+
+
+
+		//white king
+
+		bitboard = white_king;
+		source = LSB(bitboard);
+
+		//CHECK IS CASTLING POSIBLE 0 2 K Q
+		if(castle[0] && !GET(position_all, f1) && !GET(position_all, g1)) {
+			//MAYBE CHECK IS CHECK BUT IF CHECK ONLY LEGAL MOVES ARE WITH KING
+			if(check_is_square_attacked(black,f1) == 0 && check_is_square_attacked(black,g1) == 0) {
+#if LOG_MOVES_KING
+				printf("WHITE CASTLE KING\n");
+#endif
+				}
+			}
+		//QUEAN SIDE CASTLING
+		if(castle[2] && !GET((position_all), d1)  && !GET(position_all, c1) && !GET(position_all, b1)) {
+			if(check_is_square_attacked(black,d1) == 0 && check_is_square_attacked(black,c1) == 0
+			    && check_is_square_attacked(black,b1) == 0) {
+#if LOG_MOVES_KING
+				printf("WHITE CASTLE QUEAN\n");
+#endif
+				}
+			}
+			
+			//CHECK OTHER KING MOVES
+			while(bitboard) {
+			source = LSB(bitboard);
+			//WHERE IS NO WHITE PIECE
+			attacks = king_attack_table[source] & ~(position_white);
+			//print_bitboard(attacks);
+			while(attacks) {
+
+				target = LSB(attacks);
+				//DISTINGUISH BEATWEN CAPTURE AND NO
+				if(!GET(position_black, target)) {  // NO
+#if LOG_MOVES_KING
+					printf("white king move to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				else { //CAPTURE
+#if LOG_MOVES_KING
+					printf("white king capture to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				POP(attacks,target);
+				}
+
+			POP(bitboard, source);
+			}
+
+
+			
+			
+			
+
+
+
+		//white knight
+
+		bitboard = white_knight;
+		while(bitboard) {
+			source = LSB(bitboard);
+			//WHERE IS NO WHITE PIECE
+			attacks = knight_attack_table[source] & ~(position_white);
+			//print_bitboard(attacks);
+			while(attacks) {
+
+				target = LSB(attacks);
+				//DISTINGUISH BEATWEN CAPTURE AND NO
+				if(!GET(position_black, target)) {  // NO
+#if LOG_MOVES_KNIGHT
+					printf("white knight move to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				else { //CAPTURE
+#if LOG_MOVES_KNIGHT
+					printf("white knight capture to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				POP(attacks,target);
+				}
+
+			POP(bitboard, source);
+			}
+
+
+		//white bishop
+
+		bitboard = white_bishop;
+		while(bitboard) {
+			source = LSB(bitboard);
+			//GET BISHOPS ATTACKS
+			attacks = get_bishop_moves_magic(source, position_all) & ~(position_white);
+			//print_bitboard(attacks);
+			while(attacks) {
+
+				target = LSB(attacks);
+				//DISTINGUISH BEATWEN CAPTURE AND NO
+				if(!GET(position_black, target)) {  // NO
+#if LOG_MOVES_BISHOP
+					printf("white bishop move to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				else { //CAPTURE
+#if LOG_MOVES_BISHOP
+					printf("white bishop capture to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				POP(attacks,target);
+				}
+
+			POP(bitboard, source);
+			}
+
+
+
+
+		//white rook
+
+		bitboard = white_rook;
+		while(bitboard) {
+			source = LSB(bitboard);
+			//GET ROOK ATTACKS
+			attacks = get_rook_moves_magic(source, position_all) & ~(position_white);
+			//print_bitboard(attacks);
+			while(attacks) {
+
+				target = LSB(attacks);
+				//DISTINGUISH BEATWEN CAPTURE AND NO
+				if(!GET(position_black, target)) {  // NO
+#if LOG_MOVES_ROOK
+					printf("white rook move to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				else { //CAPTURE
+#if LOG_MOVES_ROOK
+					printf("white rook capture to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				POP(attacks,target);
+				}
+
+			POP(bitboard, source);
+			}
+
+
+
+
+		//white quean
+
+		bitboard = white_quean;
+		while(bitboard) {
+			source = LSB(bitboard);
+			//GET ROOK ATTACKS
+			attacks = get_quean_moves_magic(source, position_all) & ~(position_white);
+			//print_bitboard(attacks);
+			while(attacks) {
+
+				target = LSB(attacks);
+				//DISTINGUISH BEATWEN CAPTURE AND NO
+				if(!GET(position_black, target)) {  // NO
+#if LOG_MOVES_QUEAN
+					printf("white quean move to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				else { //CAPTURE
+#if LOG_MOVES_QUEAN
+					printf("white quean capture to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				POP(attacks,target);
+				}
+
+			POP(bitboard, source);
+			}
+
+
+
+		}
+
+	//black pawn
+	if(side == black) {
+
+		bitboard = black_pawn;
+		while(bitboard) {
+
+			source = LSB(bitboard);
+			target = source + 8;   //ONE SQUARE FORWARD DIFERENCS IS 8
+#if LOG_MOVES_PAWN
+			//printf("source %s target %s\n",squers_name[source], squers_name[target]);
+#endif
+			//FORWARD MOVE
+			//IF NOTING IS IN FORWARD SQUARE AND WE ARE NOT OUT OF BOARD
+			if(!(target > 63)  && !GET((position_all), target)) {
+				//printf("Nesto");
+
+				// GENERATE PROMTION WE AS WHITE CAN PROMOTE PIECES IF THER ARE IN 7 RANK
+				if(source <= h2 && source >= a2 ) {
+#if LOG_MOVES_PAWN
+					printf("black pawn promoted to q %s%s\n",squers_name[source], squers_name[target]);
+					printf("black pawn promoted to n %s%s\n",squers_name[source], squers_name[target]);
+					printf("black pawn promoted to r %s%s\n",squers_name[source], squers_name[target]);
+					printf("white pawn promoted to b %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				//ONE AND TWO FORWARD MOVES
+				else {
+					//CHECK ON TOP
+#if LOG_MOVES_PAWN
+					printf("black pawn moved to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					//CHECK IF TWO MOVES FORWARD IS POSIBLE
+					if(source <= h7 && source >= a7 && (!GET((position_all), (target + 8))));
+#if LOG_MOVES_PAWN
+					printf("black pawn moved 2 to %s%s\n",squers_name[source], squers_name[target + 8]);
+#endif
+					}
+				}
+			// CAPTURES
+			attacks  = black_pawn_attack_table[source] & position_white; // THIS IS CHECK IS THER A PIECE ON ATTACKED SQUERS
+			while(attacks) {
+				//source alredy init
+				target = LSB(attacks);
+				// GENERATE PROMTION WE AS WHITE CAN PROMOTE PIECES IF THER ARE IN 7 RANK
+				if(source <= h2 && source >= a2) {
+#if LOG_MOVES_PAWN
+					printf("black pawn capture promoted to q %s%s\n",squers_name[source], squers_name[target]);
+					printf("black pawn capture promoted to n %s%s\n",squers_name[source], squers_name[target]);
+					printf("black pawn capture promoted to r %s%s\n",squers_name[source], squers_name[target]);
+					printf("black pawn capture promoted to b %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				//ONE AND TWO FORWARD MOVES
+				else {
+					//CHECK ON TOP
+#if LOG_MOVES_PAWN
+					printf("black pawn capture to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+
+					//ENPESANT
+					}
+				POP(attacks, target);
+				}
+			if(en_pesant != 0) {
+				U64 en =  black_pawn_attack_table[source] & (1 << en_pesant);
+				//print_bitboard(en);
+				//system("pause");
+
+				if(en) {
+					int target_en = LSB(en);
+#if LOG_MOVES_PAWN
+					printf("black pawn capture_EN to %s%s\n",squers_name[source], squers_name[target_en]);
+#endif
+					}
+
+				}
+
+			POP(bitboard, source);
+			}
+
+		//black king
+
+		bitboard = black_king;
+
+		source = LSB(bitboard);
+
+		//CHECK IS CASTLING POSIBLE 1 3 k q
+		if(castle[1] && !GET(position_all, f8) && !GET(position_all, g8)) {
+			//MAYBE CHECK IS CHECK BUT IF CHECK ONLY LEGAL MOVES ARE WITH KING
+			if(check_is_square_attacked(white,f8) == 0 && check_is_square_attacked(white,g8) == 0) {
+#if LOG_MOVES_KING
+				printf("BLACK CASTLE KING\n");
+#endif
+				}
+
+
+
+			}
+		//QUEAN SIDE CASTLING
+		if(castle[3] && !GET((position_all), d8)  && !GET(position_all, c8) && !GET(position_all, b8)) {
+			if(check_is_square_attacked(white,d8) == 0 && check_is_square_attacked(white,c8) == 0
+			    && check_is_square_attacked(white,b8) == 0) {
+#if LOG_MOVES_KING
+				printf("BLACK CASTLE QUEAN\n");
+#endif
+				}
+			}
+			
+			while(bitboard) {
+			source = LSB(bitboard);
+			//WHERE IS NO WHITE PIECE
+			attacks = king_attack_table[source] & ~(position_black);
+			//print_bitboard(attacks);
+			while(attacks) {
+
+				target = LSB(attacks);
+				//DISTINGUISH BEATWEN CAPTURE AND NO
+				if(!GET(position_white, target)) {  // NO
+#if LOG_MOVES_KING
+					printf("black king move to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				else { //CAPTURE
+#if LOG_MOVES_KING
+					printf("black king capture to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				POP(attacks,target);
+				}
+
+			POP(bitboard, source);
+			}
+
+
+
+
+		//black knight
+
+		bitboard = black_knight;
+
+		while(bitboard) {
+			source = LSB(bitboard);
+			//WHERE IS NO WHITE PIECE
+			attacks = knight_attack_table[source] & ~(position_black);
+			//print_bitboard(attacks);
+			while(attacks) {
+
+				target = LSB(attacks);
+				//DISTINGUISH BEATWEN CAPTURE AND NO
+				if(!GET(position_white, target)) {  // NO
+#if LOG_MOVES_KNIGHT
+					printf("black knight move to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				else { //CAPTURE
+#if LOG_MOVES_KNIGHT
+					printf("black knight capture to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				POP(attacks,target);
+				}
+
+			POP(bitboard, source);
+			}
+
+
+
+
+
+		//black bishop
+
+		bitboard = black_bishop;
+		while(bitboard) {
+			source = LSB(bitboard);
+			//GET BISHOPS ATTACKS
+			attacks = get_bishop_moves_magic(source, position_all) & ~(position_black);
+			//print_bitboard(attacks);
+			while(attacks) {
+
+				target = LSB(attacks);
+				//DISTINGUISH BEATWEN CAPTURE AND NO
+				if(!GET(position_white, target)) {  // NO
+#if LOG_MOVES_BISHOP
+					printf("black bishop move to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				else { //CAPTURE
+#if LOG_MOVES_BISHOP
+					printf("black bishop capture to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				POP(attacks,target);
+				}
+
+			POP(bitboard, source);
+			}
+
+
+
+		//black rook
+
+		bitboard = black_rook;
+		while(bitboard) {
+			source = LSB(bitboard);
+			//GET ROOK ATTACKS
+			attacks = get_rook_moves_magic(source, position_all) & ~(position_black);
+			//print_bitboard(attacks);
+			while(attacks) {
+
+				target = LSB(attacks);
+				//DISTINGUISH BEATWEN CAPTURE AND NO
+				if(!GET(position_white, target)) {  // NO
+#if LOG_MOVES_ROOK
+					printf("black rook move to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				else { //CAPTURE
+#if LOG_MOVES_ROOK
+					printf("black rook capture to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				POP(attacks,target);
+				}
+
+			POP(bitboard, source);
+			}
+
+
+
+		//black quean
+
+		bitboard = black_quean;
+			while(bitboard) {
+			source = LSB(bitboard);
+			//GET ROOK ATTACKS
+			attacks = get_quean_moves_magic(source, position_all) & ~(position_black);
+			//print_bitboard(attacks);
+			while(attacks) {
+
+				target = LSB(attacks);
+				//DISTINGUISH BEATWEN CAPTURE AND NO
+				if(!GET(position_white, target)) {  // NO
+#if LOG_MOVES_QUEAN
+					printf("black quean move to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				else { //CAPTURE
+#if LOG_MOVES_QUEAN
+					printf("black quean capture to %s%s\n",squers_name[source], squers_name[target]);
+#endif
+					}
+
+				POP(attacks,target);
+				}
+
+			POP(bitboard, source);
+			}
+
+
+		}
+	}
+
+//WE WILL SEE WHAT TYPE OF STRUCTURE TO STORE MOVES 
+
+
