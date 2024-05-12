@@ -228,7 +228,7 @@ static inline void generate_posible_moves(Board bo, Moves *m) {
 			source = LSB(bitboard);
 			target = source - 8;   //ONE SQUARE FORWARD DIFERENCS IS 8
 #if LOG_MOVES_PAWN
-			//printf("source %s target %s\n",squers_name[source], squers_name[target]);
+			print_board();
 #endif
 			//FORWARD MOVE
 			//IF NOTING IS IN FORWARD SQUARE AND WE ARE NOT OUT OF BOARD
@@ -304,8 +304,8 @@ static inline void generate_posible_moves(Board bo, Moves *m) {
 				}
 
 			//ENPESANT
-			if(en_pesant != -1) {
-				U64 en =  white_pawn_attack_table[source] & (1 << en_pesant);
+			if(bo.enpesant != -1) {
+				U64 en =  white_pawn_attack_table[source] & (1 << bo.enpesant);
 				//print_bitboard(en);
 				//system("pause");
 
@@ -554,11 +554,11 @@ static inline void generate_posible_moves(Board bo, Moves *m) {
 			source = LSB(bitboard);
 			target = source + 8;   //ONE SQUARE FORWARD DIFERENCS IS 8
 #if LOG_MOVES_PAWN
-			//printf("source %s target %s\n",squers_name[source], squers_name[target]);
+			//print_board();
 #endif
 			//FORWARD MOVE
 			//IF NOTING IS IN FORWARD SQUARE AND WE ARE NOT OUT OF BOARD
-			if(!(target > 63)  && !GET((bo.position_alll), target)) {
+			if(!(target >= 63)  && !GET((bo.position_alll), target)) {
 				//printf("Nesto");
 
 				// GENERATE PROMTION WE AS WHITE CAN PROMOTE PIECES IF THER ARE IN 7 RANK
@@ -569,11 +569,13 @@ static inline void generate_posible_moves(Board bo, Moves *m) {
 					printf("black pawn promoted to r %s%s\n",squers_name[source], squers_name[target]);
 					printf("white pawn promoted to b %s%s\n",squers_name[source], squers_name[target]);
 					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+
+#endif
 					m->moves[m->counter++] = ENCODE(source, target, p, q, 0, 0, 0, 0);
 					m->moves[m->counter++] = ENCODE(source, target, p, n, 0, 0, 0, 0);
 					m->moves[m->counter++] = ENCODE(source, target, p, r, 0, 0, 0, 0);
 					m->moves[m->counter++] = ENCODE(source, target, p, b, 0, 0, 0, 0);
-#endif
+
 					}
 
 				//ONE AND TWO FORWARD MOVES
@@ -591,13 +593,13 @@ static inline void generate_posible_moves(Board bo, Moves *m) {
 #endif
 						//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
 						m->moves[m->counter++] = ENCODE(source, (target + 8), p, 0, 0, 1, 0, 0);
-
 						}
 
 					}
 				}
 			// CAPTURES
 			attacks  = black_pawn_attack_table[source] & bo.position_white; // THIS IS CHECK IS THER A PIECE ON ATTACKED SQUERS
+
 			while(attacks) {
 				//source alredy init
 				target = LSB(attacks);
@@ -629,8 +631,8 @@ static inline void generate_posible_moves(Board bo, Moves *m) {
 				POP(attacks, target);
 				}
 			//ENPESANT
-			if(en_pesant != 0) {
-				U64 en =  black_pawn_attack_table[source] & (1 << en_pesant);
+			if(bo.enpesant != -1) {
+				U64 en =  black_pawn_attack_table[source] & (1 << bo.enpesant);
 				//print_bitboard(en);
 				//system("pause");
 
@@ -933,16 +935,16 @@ static inline int make_move(Board *board, int move) {
 	POP(board->piece[piece], source);
 	SET(board->piece[piece], target); //WE WILL SEE
 #if LOG_MOVES
-		printf("      %s%s%c   %c         %d         %d         %d         %d\n", squers_name[SOURCE(move)],
-		       squers_name[TARGET(move)],
-		       PROMOTED(move) ? promoted_pieces[PROMOTED(move)] : ' ',
-		       ascii_pieces[PIECE(move)],
-		       CAPTURE(move) ? 1 : 0,
-		       DOUBLE(move) ? 1 : 0,
-		       ENPESANT(move) ? 1 : 0,
-		       CASTLING(move) ? 1 : 0);
+	printf("      %s%s%c   %c         %d         %d         %d         %d\n", squers_name[SOURCE(move)],
+	       squers_name[TARGET(move)],
+	       PROMOTED(move) ? promoted_pieces[PROMOTED(move)] : ' ',
+	       ascii_pieces[PIECE(move)],
+	       CAPTURE(move) ? 1 : 0,
+	       DOUBLE(move) ? 1 : 0,
+	       ENPESANT(move) ? 1 : 0,
+	       CASTLING(move) ? 1 : 0);
 
-#endif 
+#endif
 
 
 	if(capture) {
@@ -981,7 +983,9 @@ static inline int make_move(Board *board, int move) {
 		SET(board->piece[promoted], target);
 		}
 
+
 	if(en_pesant) {
+		//	printf("Enpesant");
 		// GET RID OF THE PAWN ON THE SQUARE CUZZ ITS SAVED AS
 		(board->side == white) ? POP(board->piece[p], target  + 8)
 		: POP(board->piece[P], target - 8 );
@@ -998,7 +1002,7 @@ static inline int make_move(Board *board, int move) {
 		switch (target) {
 
 			case (g1):
-	
+
 				POP(board->piece[R], h1);
 				SET(board->piece[R], f1);
 				break;
@@ -1023,73 +1027,74 @@ static inline int make_move(Board *board, int move) {
 			}
 		}
 
-		board->side ^= 1;  //UPDATE SIDE
-		//UPDATE POSITION BITBOARDS CUZZ IS NESESARY TO CHECK IS CHECK
-		board->position_white = 0;
-		board->position_black = 0;
-		board->position_alll  = 0;
-		board->enpesant       = -1;
-		
-		for(int i = P; i < K;i++){
-			board->position_white |= board->piece[i];	
+	board->side ^= 1;  //UPDATE SIDE
+	//UPDATE POSITION BITBOARDS CUZZ IS NESESARY TO CHECK IS CHECK
+	board->position_white = 0;
+	board->position_black = 0;
+	board->position_alll  = 0;
+	board->enpesant       = -1;
+
+	for(int i = P; i <= K; i++) {
+		board->position_white |= board->piece[i];
 		}
-		for(int i = p; i < k;i++){
-			board->position_black |= board->piece[i];
+	for(int i = p; i <= k; i++) {
+		board->position_black |= board->piece[i];
 		}
-		board->position_alll = (board->position_white | board->position_black);
-		//CHECK IS MOVE LEGAL AND UPDATE KING CASTTLING RIGHTS
-		if(!GET(board->piece[K], e1)){
-			board->castle[0] = 0;
+	board->position_alll = (board->position_white | board->position_black);
+	//CHECK IS MOVE LEGAL AND UPDATE KING CASTTLING RIGHTS
+	if(!GET(board->piece[K], e1)) {
+		board->castle[0] = 0;
+		board->castle[2] = 0;
+
+		}
+	else {
+		if(!GET(board->piece[R], a1)) {
 			board->castle[2] = 0;
-			 
-		}	
-		else{
-			if(!GET(board->piece[R], a1)){
-				board->castle[2] = 0;
 			if(!GET(board->piece[R], h1))
 				board->castle[0] = 0;
 			}
 		}
-		
-		// BLACK
-		if(!GET(board->piece[k],e8)){
-			board->castle[1] = 0;
+
+	// BLACK
+	if(!GET(board->piece[k],e8)) {
+		board->castle[1] = 0;
+		board->castle[3] = 0;
+
+		}
+	else {
+		if(!GET(board->piece[r], a8)) {
 			board->castle[3] = 0;
-			 
-		}	
-		else{
-			if(!GET(board->piece[r], a8)){
-				board->castle[3] = 0;
 			if(!GET(board->piece[R], h1))
 				board->castle[1] = 0;
 			}
 		}
-		
-		//CHECK IS MOVE ILEGAL MOVE IS ILEGAL IF KING IS UNDER THE CHECK AFTER THE MOVE WE WANTED 
-		//TO PLAY 
-		/*
-		if(board->side == white 
-		&& (check_is_square_attacked_board(black, LSB(board->piece[K]), &board)))
-			 {
-			 		memcpy(&board, &temp,sizeof(Board)); // RESTORE BOARD
-					return TRAP_ILEGAL; 	
-			 }
-			  
-					
-		
-		if(board->side == black
-		&& (check_is_square_attacked_board(white, LSB(board->piece[k]), &board))) 
-			{
-				memcpy(&board, &temp,sizeof(Board));
-				return TRAP_ILEGAL;	
-			}
-			//SHOUD CHECK FOR MATE
-		*/	
-	return TRAP_MOVE_OK;			
-		
-		
-		
-		
+
+	//CHECK IS MOVE ILEGAL MOVE IS ILEGAL IF KING IS UNDER THE CHECK AFTER THE MOVE WE WANTED
+	//TO PLAY
+	///*
+	if(board->side == white && (!check_is_square_attacked_board(black, LSB(board->piece[K]), &board))) {
+		printf("Ilegel!!!");
+		system("pause");
+		memcpy(&board, &temp,sizeof(Board)); // RESTORE BOARD
+		return TRAP_ILEGAL;
+		}
+
+
+
+	if(board->side == black
+	    && (!check_is_square_attacked_board(white, LSB(board->piece[k]), &board))) {
+		printf("Ilegel!!!");
+		system("pause");
+		memcpy(&board, &temp,sizeof(Board));
+		return TRAP_ILEGAL;
+		}
+	//SHOUD CHECK FOR MATE
+	//*/
+	return TRAP_MOVE_OK;
+
+
+
+
 
 	}
 
