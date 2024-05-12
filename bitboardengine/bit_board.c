@@ -1,6 +1,6 @@
 #include<stdio.h>
 
-#include "bitboard.h"
+#include "generator.h"
 /*
 	U64 a = 0;
 	for(size_t y = 0; y < 8;y++){
@@ -33,15 +33,28 @@ int main() {
 		printf("FEN ERROR !!!\n");
 		return -1;
 		}
-
-	
-	side = black;
-	//SET(position_white, f8);
-	//SET(white_quean, d8);
-	//SET(position_white, d8);
-	print_board();
-	generate_posible_moves();	
-	
+	static Board board;
+	static Moves m;
+	m.counter = 0;
+	while(1){
+		print_board();
+		system("pause");
+		init_board_state(&board);
+		generate_posible_moves(board, &m);
+		while(1){
+			int random = rand()%(m.counter - 1);
+			Trap state = make_move(&board, m.moves[random]);
+			if(state == TRAP_MOVE_OK)
+				break;
+				//printf("Nestoasdasdasdasdasdaf");
+			
+		}
+		init_iternal_state(&board);
+		
+		if(board.piece[k] == 0 || board.piece[K] == 0)
+			break;
+		
+	}
 	return 0;
 	}
 
