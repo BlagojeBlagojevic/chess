@@ -65,39 +65,63 @@ typedef struct {
 typedef struct {
 
 	U64 piece[12];
+	U64 position_white;
+	U64 position_black;
+	U64 position_alll;
+	int side;
+	int enpesant;
+	int castle[4];
 	//MAYBE OTHER STATES
 	} Board;
 
 //INIT MAIN BOARD AS GENERATED FEN NOTATION IN PREVIOS PART OF THE ENGING
 // P, N, B, R, Q, K, p, n, b, r, q, k
-Trap init_board_state(Board *b) {
+Trap init_board_state(Board *bo) {
 
-	b->piece[P] = white_pawn;
-	b->piece[N] = white_knight;
-	b->piece[R] = white_rook;
-	b->piece[Q] = white_quean;
-	b->piece[K] = white_king;
-	b->piece[p] = black_pawn;
-	b->piece[n] = black_knight;
-	b->piece[r] = black_rook;
-	b->piece[q] = black_quean;
-	b->piece[k] = black_king;
+	bo->piece[P] = white_pawn;
+	bo->piece[N] = white_knight;
+	bo->piece[B] = white_bishop;
+	bo->piece[R] = white_rook;
+	bo->piece[Q] = white_quean;
+	bo->piece[K] = white_king;
+
+	bo->piece[p] = black_pawn;
+	bo->piece[n] = black_knight;
+	bo->piece[b] = black_bishop;
+	bo->piece[r] = black_rook;
+	bo->piece[q] = black_quean;
+	bo->piece[k] = black_king;
+
+	bo->position_white  = white_pawn | white_knight | white_rook | white_bishop | white_quean | white_king;
+	bo->position_black  = black_pawn | black_knight | black_rook | black_bishop | black_quean | black_king;
+	bo->position_alll   = bo->position_white | bo->position_black;
+	bo->side            = side;
+	bo->enpesant        = en_pesant;
+	memcpy(bo->castle, castle, SIZE(castle));  //MAYBE DOS NOT WORKS
 	return TRAP_OK;
 
 	};
 
-Trap init_iternal_state(Board *b) {
+Trap init_iternal_state(Board *bo) {
 
-	white_pawn   = b->piece[P];
-	white_knight = b->piece[N];
-	white_rook   = b->piece[R];
-	white_quean  = b->piece[Q];
-	white_king   = b->piece[K];
-	black_pawn   = b->piece[p];
-	black_knight = b->piece[n];
-	black_rook   = b->piece[r];
-	black_quean  = b->piece[q];
-	black_king   = b->piece[k];
+	white_pawn   = bo->piece[P];
+	white_knight = bo->piece[N];
+	white_bishop = bo->piece[B];
+	white_rook   = bo->piece[R];
+	white_quean  = bo->piece[Q];
+	white_king   = bo->piece[K];
+	black_pawn   = bo->piece[p];
+	black_knight = bo->piece[n];
+	black_bishop = bo->piece[b];
+	black_rook   = bo->piece[r];
+	black_quean  = bo->piece[q];
+	black_king   = bo->piece[k];
+
+	position_white = bo->position_white;
+	position_black = bo->position_black;
+	side           = bo->side;
+	en_pesant      = bo->enpesant;
+	memcpy(castle, bo->castle, SIZE(castle));
 	return TRAP_OK;
 
 	};
@@ -123,6 +147,60 @@ void print_move(int move) {
 	}
 
 
+static inline int check_is_square_attacked_board(int side, int square, Board *bo) {
+
+	U64 white_pawn     = bo->piece[P];
+	U64 white_knight   = bo->piece[N];
+	U64 white_bishop   = bo->piece[B];
+	U64 white_rook     = bo->piece[R];
+	U64 white_quean    = bo->piece[Q];
+	U64 white_king     = bo->piece[K];
+	U64 black_pawn     = bo->piece[p];
+	U64 black_knight   = bo->piece[n];
+	U64 black_bishop   = bo->piece[b];
+	U64 black_rook     = bo->piece[r];
+	U64 black_quean    = bo->piece[q];
+	U64 black_king     = bo->piece[k];
+	U64 position_white = bo->position_white;
+	U64 position_black = bo->position_black;
+	U64 position_alll  = bo->position_white & bo->position_black;
+	U64 en_pesant      = bo->enpesant;
+	//int side           = bo->side;
+	//PROBOBLY NO THIS
+	if(square > 63 && square < 0) {
+		printf("OVERFLOW!!!\n");
+		return TRAP_OVERFLOW;
+		}
+
+
+
+	if((side == white) && (black_pawn_attack_table[square] & white_pawn)) return 1;
+
+	if((side == black) && (white_pawn_attack_table[square] & black_pawn)) return 1;
+
+	if (knight_attack_table[square] & ((side == white) ? white_knight : black_knight)) return 1;
+
+	if(get_bishop_moves_magic(square, position_alll) & ((side == white) ? white_bishop : black_bishop)) return 1;
+
+	if(get_rook_moves_magic(square, position_alll) & ((side == white) ? white_rook : black_rook)) return 1;
+
+	if(get_quean_moves_magic(square, position_alll) & ((side == white) ? white_quean : black_quean)) return 1;
+
+	if(king_attack_table[square] & ((side == white) ? white_king : black_king)) return 1;
+
+	return 0;
+
+	}
+
+
+
+
+
+
+
+
+
+
 
 //GENERATE MOVES MAIN FUNCTION WITCH GENERATES MOVES
 //ACORDING TO CHESS PROGRAMING WIKI MAX AMOUNT OF MOVES IS 218
@@ -135,16 +213,16 @@ void print_move(int move) {
 #define LOG_MOVES_ROOK    0
 #define LOG_MOVES_QUEAN   0
 
-static inline void generate_posible_moves(Board b, Moves *m) {
+static inline void generate_posible_moves(Board bo, Moves *m) {
 
 	static int target, source; // SQUER WITCH MOVE STARTS FROM AND WHER TO GO
 
 	static U64 bitboard, attacks;
-
+	m->counter = 0;                //RESET COUNTER
 	//white pawn
-	if(side == white) {
+	if(bo.side == white) {
 
-		bitboard = b.piece[P];
+		bitboard = bo.piece[P];
 		while(bitboard) {
 			//system("pause");
 			source = LSB(bitboard);
@@ -154,7 +232,7 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 #endif
 			//FORWARD MOVE
 			//IF NOTING IS IN FORWARD SQUARE AND WE ARE NOT OUT OF BOARD
-			if(!(target < 0)  && !GET((position_all), target)) {
+			if(!(target < 0)  && !GET((bo.position_alll), target)) {
 				//printf("Nesto");
 
 				// GENERATE PROMTION WE AS WHITE CAN PROMOTE PIECES IF THER ARE IN 7 RANK
@@ -180,18 +258,18 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 #endif
 					m->moves[m->counter++] = ENCODE(source, target,P,0,0,0,0,0);
 					//CHECK IF TWO MOVES FORWARD IS POSIBLE
-					if(source <= h2 && source >= a2 && (!GET((position_all), (target - 8)))){
-					m->moves[m->counter++] = ENCODE(source, target+1,P,0,0,1,0,0);
+					if(source <= h2 && source >= a2 && (!GET((bo.position_alll), (target - 8)))) {
+						m->moves[m->counter++] = ENCODE(source, target-8,P,0,0,1,0,0);
 #if LOG_MOVES_PAWN
-					printf("white pawn moved 2 to %s%s\n",squers_name[source], squers_name[target - 8]);
+						printf("white pawn moved 2 to %s%s\n",squers_name[source], squers_name[target - 8]);
 #endif
-						
-					}
+
+						}
 
 					}
 				}
 			// CAPTURES
-			attacks  = white_pawn_attack_table[source] & position_black; // THIS IS CHECK IS THER A PIECE ON ATTACKED SQUERS
+			attacks  = white_pawn_attack_table[source] & bo.position_black; // THIS IS CHECK IS THER A PIECE ON ATTACKED SQUERS
 			//print_bitboard(attacks);
 			while(attacks) {
 				//source alredy init
@@ -204,7 +282,13 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 					printf("white pawn capture promoted to r %s%s\n",squers_name[source], squers_name[target]);
 					printf("white pawn capture promoted to b %s%s\n",squers_name[source], squers_name[target]);
 #endif
-		
+//        ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target,P, Q, 1, 0,0,0);
+					m->moves[m->counter++] = ENCODE(source, target,P, R, 1, 0,0,0);
+					m->moves[m->counter++] = ENCODE(source, target,P, N, 1, 0,0,0);
+					m->moves[m->counter++] = ENCODE(source, target,P, B, 1, 0,0,0);
+
+
 					}
 
 				//ONE AND TWO FORWARD MOVES
@@ -213,6 +297,8 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 #if LOG_MOVES_PAWN
 					printf("white pawn capture to %s%s\n",squers_name[source], squers_name[target]);
 #endif
+//        ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target, P, 0, 1, 0, 0, 0);
 					}
 				POP(attacks, target);
 				}
@@ -228,6 +314,9 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 #if LOG_MOVES_PAWN
 					printf("white pawn capture_EN to %s%s\n",squers_name[source], squers_name[target_en]);
 #endif
+//         ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target_en,P, 0, 1, 0, 1, 0);
+
 					}
 
 				}
@@ -236,25 +325,33 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 
 		//white king
 
-		bitboard = b.piece[K];
+		bitboard = bo.piece[K];
 		source = LSB(bitboard);
 
 		//CHECK IS CASTLING POSIBLE 0 2 K Q
-		if(castle[0] && !GET(position_all, f1) && !GET(position_all, g1)) {
+		if(castle[0] && !GET(bo.position_alll, f1) && !GET(bo.position_alll, g1)) {
 			//MAYBE CHECK IS CHECK BUT IF CHECK ONLY LEGAL MOVES ARE WITH KING
-			if(check_is_square_attacked(black,f1) == 0 && check_is_square_attacked(black,g1) == 0) {
+			if(check_is_square_attacked_board(black,f1, &bo) == 0 && check_is_square_attacked_board(black, g1, &bo) == 0) {
 #if LOG_MOVES_KING
 				printf("WHITE CASTLE KING\n");
 #endif
+				//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+				m->moves[m->counter++] = ENCODE(source, g1,K, 0, 0, 0,0,1);
+
 				}
 			}
 		//QUEAN SIDE CASTLING
-		if(castle[2] && !GET((position_all), d1)  && !GET(position_all, c1) && !GET(position_all, b1)) {
-			if(check_is_square_attacked(black,d1) == 0 && check_is_square_attacked(black,c1) == 0
-			    && check_is_square_attacked(black,b1) == 0) {
+		if(castle[2] && !GET((bo.position_alll), d1)
+		    && !GET(bo.position_alll, c1) && !GET(bo.position_alll, b1)) {
+			if(check_is_square_attacked_board(black,d1, &bo) == 0
+			    && check_is_square_attacked_board(black,c1, &bo) == 0
+			    && check_is_square_attacked_board(black, b1, &bo) == 0) {
 #if LOG_MOVES_KING
 				printf("WHITE CASTLE QUEAN\n");
 #endif
+				//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+				m->moves[m->counter++] = ENCODE(source, b1,K, 0, 0, 0,0,1);
+
 				}
 			}
 
@@ -262,22 +359,28 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 		while(bitboard) {
 			source = LSB(bitboard);
 			//WHERE IS NO WHITE PIECE
-			attacks = king_attack_table[source] & ~(position_white);
+			attacks = king_attack_table[source] & ~(bo.position_white);
 			//print_bitboard(attacks);
 			while(attacks) {
 
 				target = LSB(attacks);
 				//DISTINGUISH BEATWEN CAPTURE AND NO
-				if(!GET(position_black, target)) {  // NO
+				if(!GET(bo.position_black, target)) {  // NO
 #if LOG_MOVES_KING
 					printf("white king move to %s%s\n",squers_name[source], squers_name[target]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target,K, 0, 0, 0, 0, 0);
+
 					}
 
 				else { //CAPTURE
 #if LOG_MOVES_KING
 					printf("white king capture to %s%s\n",squers_name[source], squers_name[target]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target,K, 0, 1, 0, 0, 0);
+
 					}
 
 				POP(attacks,target);
@@ -295,26 +398,31 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 
 		//white knight
 
-		bitboard = b.piece[N];
+		bitboard = bo.piece[N];
 		while(bitboard) {
 			source = LSB(bitboard);
 			//WHERE IS NO WHITE PIECE
-			attacks = knight_attack_table[source] & ~(position_white);
+			attacks = knight_attack_table[source] & ~(bo.position_white);
 			//print_bitboard(attacks);
 			while(attacks) {
 
 				target = LSB(attacks);
 				//DISTINGUISH BEATWEN CAPTURE AND NO
-				if(!GET(position_black, target)) {  // NO
+				if(!GET(bo.position_black, target)) {  // NO
 #if LOG_MOVES_KNIGHT
 					printf("white knight move to %s%s\n",squers_name[source], squers_name[target]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target, N, 0, 0, 0, 0, 0);
+
 					}
 
 				else { //CAPTURE
 #if LOG_MOVES_KNIGHT
 					printf("white knight capture to %s%s\n",squers_name[source], squers_name[target]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target, N, 0, 1, 0, 0, 0);
 					}
 
 				POP(attacks,target);
@@ -326,26 +434,30 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 
 		//white bishop
 
-		bitboard = b.piece[B];
+		bitboard = bo.piece[B];
 		while(bitboard) {
 			source = LSB(bitboard);
 			//GET BISHOPS ATTACKS
-			attacks = get_bishop_moves_magic(source, position_all) & ~(position_white);
+			attacks = get_bishop_moves_magic(source, bo.position_alll) & ~(bo.position_white);
 			//print_bitboard(attacks);
 			while(attacks) {
 
 				target = LSB(attacks);
 				//DISTINGUISH BEATWEN CAPTURE AND NO
-				if(!GET(position_black, target)) {  // NO
+				if(!GET(bo.position_black, target)) {  // NO
 #if LOG_MOVES_BISHOP
 					printf("white bishop move to %s%s\n",squers_name[source], squers_name[target]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target, B, 0, 0, 0, 0, 0);
 					}
 
 				else { //CAPTURE
 #if LOG_MOVES_BISHOP
 					printf("white bishop capture to %s%s\n",squers_name[source], squers_name[target]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target, B, 0, 1, 0, 0, 0);
 					}
 
 				POP(attacks,target);
@@ -359,26 +471,30 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 
 		//white rook
 
-		bitboard = b.piece[R];
+		bitboard = bo.piece[R];
 		while(bitboard) {
 			source = LSB(bitboard);
 			//GET ROOK ATTACKS
-			attacks = get_rook_moves_magic(source, position_all) & ~(position_white);
+			attacks = get_rook_moves_magic(source, bo.position_alll) & ~(bo.position_white);
 			//print_bitboard(attacks);
 			while(attacks) {
 
 				target = LSB(attacks);
 				//DISTINGUISH BEATWEN CAPTURE AND NO
-				if(!GET(position_black, target)) {  // NO
+				if(!GET(bo.position_black, target)) {  // NO
 #if LOG_MOVES_ROOK
 					printf("white rook move to %s%s\n",squers_name[source], squers_name[target]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target, R, 0, 0, 0, 0, 0);
 					}
 
 				else { //CAPTURE
 #if LOG_MOVES_ROOK
 					printf("white rook capture to %s%s\n",squers_name[source], squers_name[target]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target, R, 0, 1, 0, 0, 0);
 					}
 
 				POP(attacks,target);
@@ -392,26 +508,31 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 
 		//white quean
 
-		bitboard = b.piece[Q];
+		bitboard = bo.piece[Q];
 		while(bitboard) {
 			source = LSB(bitboard);
 			//GET ROOK ATTACKS
-			attacks = get_quean_moves_magic(source, position_all) & ~(position_white);
+			attacks = get_quean_moves_magic(source, bo.position_alll) & ~(bo.position_white);
 			//print_bitboard(attacks);
 			while(attacks) {
 
 				target = LSB(attacks);
 				//DISTINGUISH BEATWEN CAPTURE AND NO
-				if(!GET(position_black, target)) {  // NO
+				if(!GET(bo.position_black, target)) {  // NO
 #if LOG_MOVES_QUEAN
 					printf("white quean move to %s%s\n",squers_name[source], squers_name[target]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target, Q, 0, 0, 0, 0, 0);
 					}
 
 				else { //CAPTURE
 #if LOG_MOVES_QUEAN
 					printf("white quean capture to %s%s\n",squers_name[source], squers_name[target]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target, Q, 0, 1, 0, 0, 0);
+
 					}
 
 				POP(attacks,target);
@@ -425,9 +546,9 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 		}
 
 	//black pawn
-	if(side == black) {
+	if(bo.side == black) {
 
-		bitboard = b.piece[p];
+		bitboard = bo.piece[p];
 		while(bitboard) {
 
 			source = LSB(bitboard);
@@ -437,7 +558,7 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 #endif
 			//FORWARD MOVE
 			//IF NOTING IS IN FORWARD SQUARE AND WE ARE NOT OUT OF BOARD
-			if(!(target > 63)  && !GET((position_all), target)) {
+			if(!(target > 63)  && !GET((bo.position_alll), target)) {
 				//printf("Nesto");
 
 				// GENERATE PROMTION WE AS WHITE CAN PROMOTE PIECES IF THER ARE IN 7 RANK
@@ -447,6 +568,11 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 					printf("black pawn promoted to n %s%s\n",squers_name[source], squers_name[target]);
 					printf("black pawn promoted to r %s%s\n",squers_name[source], squers_name[target]);
 					printf("white pawn promoted to b %s%s\n",squers_name[source], squers_name[target]);
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target, p, q, 0, 0, 0, 0);
+					m->moves[m->counter++] = ENCODE(source, target, p, n, 0, 0, 0, 0);
+					m->moves[m->counter++] = ENCODE(source, target, p, r, 0, 0, 0, 0);
+					m->moves[m->counter++] = ENCODE(source, target, p, b, 0, 0, 0, 0);
 #endif
 					}
 
@@ -456,15 +582,22 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 #if LOG_MOVES_PAWN
 					printf("black pawn moved to %s%s\n",squers_name[source], squers_name[target]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target, p, 0, 0, 0, 0, 0);
 					//CHECK IF TWO MOVES FORWARD IS POSIBLE
-					if(source <= h7 && source >= a7 && (!GET((position_all), (target + 8))));
+					if(source <= h7 && source >= a7 && (!GET((bo.position_alll), (target + 8)))) {
 #if LOG_MOVES_PAWN
-					printf("black pawn moved 2 to %s%s\n",squers_name[source], squers_name[target + 8]);
+						printf("black pawn moved 2 to %s%s\n",squers_name[source], squers_name[target + 8]);
 #endif
+						//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+						m->moves[m->counter++] = ENCODE(source, (target + 8), p, 0, 0, 1, 0, 0);
+
+						}
+
 					}
 				}
 			// CAPTURES
-			attacks  = black_pawn_attack_table[source] & position_white; // THIS IS CHECK IS THER A PIECE ON ATTACKED SQUERS
+			attacks  = black_pawn_attack_table[source] & bo.position_white; // THIS IS CHECK IS THER A PIECE ON ATTACKED SQUERS
 			while(attacks) {
 				//source alredy init
 				target = LSB(attacks);
@@ -476,6 +609,11 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 					printf("black pawn capture promoted to r %s%s\n",squers_name[source], squers_name[target]);
 					printf("black pawn capture promoted to b %s%s\n",squers_name[source], squers_name[target]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target, p, q, 1, 0, 0, 0);
+					m->moves[m->counter++] = ENCODE(source, target, p, n, 1, 0, 0, 0);
+					m->moves[m->counter++] = ENCODE(source, target, p, r, 1, 0, 0, 0);
+					m->moves[m->counter++] = ENCODE(source, target, p, b, 1, 0, 0, 0);
 					}
 
 				//ONE AND TWO FORWARD MOVES
@@ -484,11 +622,13 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 #if LOG_MOVES_PAWN
 					printf("black pawn capture to %s%s\n",squers_name[source], squers_name[target]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target, p, 0, 1, 0, 0, 0);
 
-					//ENPESANT
 					}
 				POP(attacks, target);
 				}
+			//ENPESANT
 			if(en_pesant != 0) {
 				U64 en =  black_pawn_attack_table[source] & (1 << en_pesant);
 				//print_bitboard(en);
@@ -499,6 +639,8 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 #if LOG_MOVES_PAWN
 					printf("black pawn capture_EN to %s%s\n",squers_name[source], squers_name[target_en]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target_en, p, 0, 1, 0, 1, 0);
 					}
 
 				}
@@ -508,51 +650,60 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 
 		//black king
 
-		bitboard = b.piece[k];
+		bitboard = bo.piece[k];
 
 		source = LSB(bitboard);
 
 		//CHECK IS CASTLING POSIBLE 1 3 k q
-		if(castle[1] && !GET(position_all, f8) && !GET(position_all, g8)) {
+		if(castle[1] && !GET(bo.position_alll, f8) && !GET(bo.position_alll, g8)) {
 			//MAYBE CHECK IS CHECK BUT IF CHECK ONLY LEGAL MOVES ARE WITH KING
-			if(check_is_square_attacked(white,f8) == 0 && check_is_square_attacked(white,g8) == 0) {
+			if(check_is_square_attacked_board(white,f8, &bo) == 0 && check_is_square_attacked_board(white,g8, &bo) == 0) {
 #if LOG_MOVES_KING
 				printf("BLACK CASTLE KING\n");
 #endif
+				//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+				m->moves[m->counter++] = ENCODE(source, g8, k, 0, 0, 0, 0, 1);
 				}
 
 
 
 			}
 		//QUEAN SIDE CASTLING
-		if(castle[3] && !GET((position_all), d8)  && !GET(position_all, c8) && !GET(position_all, b8)) {
-			if(check_is_square_attacked(white,d8) == 0 && check_is_square_attacked(white,c8) == 0
-			    && check_is_square_attacked(white,b8) == 0) {
+		if(castle[3] && !GET((bo.position_alll), d8)
+		    && !GET(bo.position_alll, c8) && !GET(bo.position_alll, b8)) {
+			if(check_is_square_attacked_board(white,d8, &bo) == 0 && check_is_square_attacked_board(white,c8, &bo) == 0
+			    && check_is_square_attacked_board(white,b8, &bo) == 0) { //MAYBE NO B8
 #if LOG_MOVES_KING
 				printf("BLACK CASTLE QUEAN\n");
 #endif
+				//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+				m->moves[m->counter++] = ENCODE(source, c8, k, 0, 0, 0, 0, 1);
 				}
 			}
 
 		while(bitboard) {
 			source = LSB(bitboard);
 			//WHERE IS NO WHITE PIECE
-			attacks = king_attack_table[source] & ~(position_black);
+			attacks = king_attack_table[source] & ~(bo.position_black);
 			//print_bitboard(attacks);
 			while(attacks) {
 
 				target = LSB(attacks);
 				//DISTINGUISH BEATWEN CAPTURE AND NO
-				if(!GET(position_white, target)) {  // NO
+				if(!GET(bo.position_white, target)) {  // NO
 #if LOG_MOVES_KING
 					printf("black king move to %s%s\n",squers_name[source], squers_name[target]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target, k, 0, 0, 0, 0, 0);
 					}
 
 				else { //CAPTURE
 #if LOG_MOVES_KING
 					printf("black king capture to %s%s\n",squers_name[source], squers_name[target]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target, k, 0, 1, 0, 0, 0);
 					}
 
 				POP(attacks,target);
@@ -566,27 +717,31 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 
 		//black knight
 
-		bitboard = b.piece[n];
+		bitboard = bo.piece[n];
 
 		while(bitboard) {
 			source = LSB(bitboard);
 			//WHERE IS NO WHITE PIECE
-			attacks = knight_attack_table[source] & ~(position_black);
+			attacks = knight_attack_table[source] & ~(bo.position_black);
 			//print_bitboard(attacks);
 			while(attacks) {
 
 				target = LSB(attacks);
 				//DISTINGUISH BEATWEN CAPTURE AND NO
-				if(!GET(position_white, target)) {  // NO
+				if(!GET(bo.position_white, target)) {  // NO
 #if LOG_MOVES_KNIGHT
 					printf("black knight move to %s%s\n",squers_name[source], squers_name[target]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target, n, 0, 0, 0, 0, 0);
 					}
 
 				else { //CAPTURE
 #if LOG_MOVES_KNIGHT
 					printf("black knight capture to %s%s\n",squers_name[source], squers_name[target]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target, n, 0, 1, 0, 0, 0);
 					}
 
 				POP(attacks,target);
@@ -601,26 +756,31 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 
 		//black bishop
 
-		bitboard = black_bishop;
+		bitboard = bo.piece[b];
 		while(bitboard) {
 			source = LSB(bitboard);
 			//GET BISHOPS ATTACKS
-			attacks = get_bishop_moves_magic(source, position_all) & ~(position_black);
+			attacks = get_bishop_moves_magic(source, bo.position_alll) & ~(bo.position_black);
 			//print_bitboard(attacks);
 			while(attacks) {
 
 				target = LSB(attacks);
 				//DISTINGUISH BEATWEN CAPTURE AND NO
-				if(!GET(position_white, target)) {  // NO
+				if(!GET(bo.position_white, target)) {  // NO
 #if LOG_MOVES_BISHOP
 					printf("black bishop move to %s%s\n",squers_name[source], squers_name[target]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target, b, 0, 0, 0, 0, 0);
 					}
 
 				else { //CAPTURE
 #if LOG_MOVES_BISHOP
 					printf("black bishop capture to %s%s\n",squers_name[source], squers_name[target]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					//b is alredy declared so bo
+					m->moves[m->counter++] = ENCODE(source, target, (b), 0, 1, 0, 0, 0);
 					}
 
 				POP(attacks,target);
@@ -633,26 +793,30 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 
 		//black rook
 
-		bitboard = b.piece[r];
+		bitboard = bo.piece[r];
 		while(bitboard) {
 			source = LSB(bitboard);
 			//GET ROOK ATTACKS
-			attacks = get_rook_moves_magic(source, position_all) & ~(position_black);
+			attacks = get_rook_moves_magic(source, bo.position_alll) & ~(bo.position_black);
 			//print_bitboard(attacks);
 			while(attacks) {
 
 				target = LSB(attacks);
 				//DISTINGUISH BEATWEN CAPTURE AND NO
-				if(!GET(position_white, target)) {  // NO
+				if(!GET(bo.position_white, target)) {  // NO
 #if LOG_MOVES_ROOK
 					printf("black rook move to %s%s\n",squers_name[source], squers_name[target]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target, r, 0, 0, 0, 0, 0);
 					}
 
 				else { //CAPTURE
 #if LOG_MOVES_ROOK
 					printf("black rook capture to %s%s\n",squers_name[source], squers_name[target]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target, r, 0, 1, 0, 0, 0);
 					}
 
 				POP(attacks,target);
@@ -665,26 +829,30 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 
 		//black quean
 
-		bitboard = b.piece[q];
+		bitboard = bo.piece[q];
 		while(bitboard) {
 			source = LSB(bitboard);
 			//GET ROOK ATTACKS
-			attacks = get_quean_moves_magic(source, position_all) & ~(position_black);
+			attacks = get_quean_moves_magic(source, bo.position_alll) & ~(bo.position_black);
 			//print_bitboard(attacks);
 			while(attacks) {
 
 				target = LSB(attacks);
 				//DISTINGUISH BEATWEN CAPTURE AND NO
-				if(!GET(position_white, target)) {  // NO
+				if(!GET(bo.position_white, target)) {  // NO
 #if LOG_MOVES_QUEAN
 					printf("black quean move to %s%s\n",squers_name[source], squers_name[target]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target, q, 0, 0, 0, 0, 0);
 					}
 
 				else { //CAPTURE
 #if LOG_MOVES_QUEAN
 					printf("black quean capture to %s%s\n",squers_name[source], squers_name[target]);
 #endif
+					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+					m->moves[m->counter++] = ENCODE(source, target, q, 0, 1, 0, 0, 0);
 					}
 
 				POP(attacks,target);
@@ -697,15 +865,15 @@ static inline void generate_posible_moves(Board b, Moves *m) {
 
 
 const char promoted_pieces[] = {
-    [Q] = 'q',
-    [R] = 'r',
-    [B] = 'b',
-    [N] = 'n',
-    [q] = 'q',
-    [r] = 'r',
-    [b] = 'b',
-    [n] = 'n'
-}; 
+	[Q] = 'q',
+	[R] = 'r',
+	[B] = 'b',
+	[N] = 'n',
+	[q] = 'q',
+	[r] = 'r',
+	[b] = 'b',
+	[n] = 'n'
+	};
 const char ascii_pieces[12] = "PNBRQKpnbrqk";
 
 void print_move_list(Moves *move_list) {
@@ -740,6 +908,191 @@ void print_move_list(Moves *move_list) {
 	printf("\n\n     Total number of moves: %d\n\n", move_list->counter);
 
 	}
+
+
+//
+
+
+#define LOG_MOVES 1
+// FUNCTION USED TO GENARTES MOVE AND RETURN IT WE ACCEPT BOARD STRUCTURE AS INPUT
+static inline int make_move(Board *board, int move) {
+	Board temp;
+	memcpy(&temp, &board, sizeof(Board));
+	//temp = board;  // LIKE MEMCPY WITHOUT ONE
+	//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
+	//DECODE MOVE
+	int source    = SOURCE(move);
+	int target    = TARGET(move);
+	int piece     = PIECE(move);
+	int promoted  = PROMOTED(move);
+	int capture   = CAPTURE(move);
+	int doubl     = DOUBLE(move);
+	int en_pesant = ENPESANT(move);
+	int castling  = CASTLING(move);
+
+	POP(board->piece[piece], source);
+	SET(board->piece[piece], target); //WE WILL SEE
+#if LOG_MOVES
+		printf("      %s%s%c   %c         %d         %d         %d         %d\n", squers_name[SOURCE(move)],
+		       squers_name[TARGET(move)],
+		       PROMOTED(move) ? promoted_pieces[PROMOTED(move)] : ' ',
+		       ascii_pieces[PIECE(move)],
+		       CAPTURE(move) ? 1 : 0,
+		       DOUBLE(move) ? 1 : 0,
+		       ENPESANT(move) ? 1 : 0,
+		       CASTLING(move) ? 1 : 0);
+
+#endif 
+
+
+	if(capture) {
+		static int start_piece, end_piece;   // we will loop over this pieces
+
+		if(board->side == white) {
+			start_piece = p;
+			end_piece   = k;
+			}
+
+		else { //BLACK
+			start_piece = P;
+			end_piece   = K;
+			}
+
+		// LOOP OVER ALL PIECES
+		for(int pi= start_piece; pi <= end_piece; pi++) {
+			if(GET(board->piece[pi], target)) {  //IF PIECE IS ON SQUARE
+				POP(board->piece[pi], target);
+
+
+				}
+			}
+		}
+	if (promoted) {
+
+		if (board->side == white) {
+			POP(board->piece[P], target);
+			}
+
+		else {
+			POP(board->piece[p], target);
+			}
+
+		// PROMOTE PIECE
+		SET(board->piece[promoted], target);
+		}
+
+	if(en_pesant) {
+		// GET RID OF THE PAWN ON THE SQUARE CUZZ ITS SAVED AS
+		(board->side == white) ? POP(board->piece[p], target  + 8)
+		: POP(board->piece[P], target - 8 );
+		//DOES IT WORKS
+		}
+
+	// ENCODE A ENPESANT MOVE
+	if(doubl) {
+		(side == white) ? board->enpesant = (target + 8) : (target - 8);
+		}
+	//KING IS INITALI MOVED AND NOW W E NEAD TO MOVE ROOK TO A SQUARE
+	if (castling) {
+		//
+		switch (target) {
+
+			case (g1):
+	
+				POP(board->piece[R], h1);
+				SET(board->piece[R], f1);
+				break;
+
+
+			case (c1):
+				POP(board->piece[R], d1);
+				SET(board->piece[R], d1);
+				break;
+
+			// black castles king side
+			case (g8):
+				POP(board->piece[r], g8);
+				SET(board->piece[r], g8);
+				break;
+
+
+			case (c8):
+				POP(board->piece[r], h1);
+				SET(board->piece[r], f1);
+				break;
+			}
+		}
+
+		board->side ^= 1;  //UPDATE SIDE
+		//UPDATE POSITION BITBOARDS CUZZ IS NESESARY TO CHECK IS CHECK
+		board->position_white = 0;
+		board->position_black = 0;
+		board->position_alll  = 0;
+		board->enpesant       = -1;
+		
+		for(int i = P; i < K;i++){
+			board->position_white |= board->piece[i];	
+		}
+		for(int i = p; i < k;i++){
+			board->position_black |= board->piece[i];
+		}
+		board->position_alll = (board->position_white | board->position_black);
+		//CHECK IS MOVE LEGAL AND UPDATE KING CASTTLING RIGHTS
+		if(!GET(board->piece[K], e1)){
+			board->castle[0] = 0;
+			board->castle[2] = 0;
+			 
+		}	
+		else{
+			if(!GET(board->piece[R], a1)){
+				board->castle[2] = 0;
+			if(!GET(board->piece[R], h1))
+				board->castle[0] = 0;
+			}
+		}
+		
+		// BLACK
+		if(!GET(board->piece[k],e8)){
+			board->castle[1] = 0;
+			board->castle[3] = 0;
+			 
+		}	
+		else{
+			if(!GET(board->piece[r], a8)){
+				board->castle[3] = 0;
+			if(!GET(board->piece[R], h1))
+				board->castle[1] = 0;
+			}
+		}
+		
+		//CHECK IS MOVE ILEGAL MOVE IS ILEGAL IF KING IS UNDER THE CHECK AFTER THE MOVE WE WANTED 
+		//TO PLAY 
+		/*
+		if(board->side == white 
+		&& (check_is_square_attacked_board(black, LSB(board->piece[K]), &board)))
+			 {
+			 		memcpy(&board, &temp,sizeof(Board)); // RESTORE BOARD
+					return TRAP_ILEGAL; 	
+			 }
+			  
+					
+		
+		if(board->side == black
+		&& (check_is_square_attacked_board(white, LSB(board->piece[k]), &board))) 
+			{
+				memcpy(&board, &temp,sizeof(Board));
+				return TRAP_ILEGAL;	
+			}
+			//SHOUD CHECK FOR MATE
+		*/	
+	return TRAP_MOVE_OK;			
+		
+		
+		
+		
+
+	}
+
 
 
 
