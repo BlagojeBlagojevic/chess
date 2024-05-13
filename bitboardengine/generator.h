@@ -146,56 +146,50 @@ void print_move(int move) {
 
 	}
 
-
+//black,c1, &bo
 static inline int check_is_square_attacked_board(int side, int square, Board *bo) {
 
-	U64 white_pawn     = bo->piece[P];
-	U64 white_knight   = bo->piece[N];
-	U64 white_bishop   = bo->piece[B];
-	U64 white_rook     = bo->piece[R];
-	U64 white_quean    = bo->piece[Q];
-	U64 white_king     = bo->piece[K];
-	U64 black_pawn     = bo->piece[p];
-	U64 black_knight   = bo->piece[n];
-	U64 black_bishop   = bo->piece[b];
-	U64 black_rook     = bo->piece[r];
-	U64 black_quean    = bo->piece[q];
-	U64 black_king     = bo->piece[k];
-	U64 position_white = bo->position_white;
-	U64 position_black = bo->position_black;
-	U64 position_alll  = bo->position_white & bo->position_black;
-	U64 en_pesant      = bo->enpesant;
-	//int side           = bo->side;
+	U64 white_pawna     = bo->piece[P];
+	U64 white_knighta   = bo->piece[N];
+	U64 white_bishopa   = bo->piece[B];
+	U64 white_rooka     = bo->piece[R];
+	U64 white_queana    = bo->piece[Q];
+	U64 white_kinga     = bo->piece[K];
+	U64 black_pawna     = bo->piece[p];
+	U64 black_knighta   = bo->piece[n];
+	U64 black_bishopa   = bo->piece[b];
+	U64 black_rooka     = bo->piece[r];
+	U64 black_queana    = bo->piece[q];
+	U64 black_kinga     = bo->piece[k];
+	U64 position_whitea = bo->position_white;
+	U64 position_blacka = bo->position_black;
+	U64 position_alll   = bo->position_white & bo->position_black;
+	U64 en_pesanta      = bo->enpesant;
+  //int side            = bo->side;
 	//PROBOBLY NO THIS
-	if(square > 63 && square < 0) {
-		printf("OVERFLOW!!!\n");
-		return TRAP_OVERFLOW;
-		}
+	//if(square > 63 && square < 0) {
+		//printf("OVERFLOW!!!\n");
+		//return TRAP_OVERFLOW;
+		//}
 
 
 
-	if((side == white) && (black_pawn_attack_table[square] & white_pawn)) return 1;
+	if((side == white) && (black_pawn_attack_table[square] & white_pawna)) return 1;
 
-	if((side == black) && (white_pawn_attack_table[square] & black_pawn)) return 1;
+	if((side == black) && (white_pawn_attack_table[square] & black_pawna)) return 1;
 
-	if (knight_attack_table[square] & ((side == white) ? white_knight : black_knight)) return 1;
+	if (knight_attack_table[square] & ((side == white) ? white_knighta : black_knighta)) return 1;
 
-	if(get_bishop_moves_magic(square, position_alll) & ((side == white) ? white_bishop : black_bishop)) return 1;
+	if(get_bishop_moves_magic(square, position_alll) & ((side == white) ? white_bishopa : black_bishopa)) return 1;
 
-	if(get_rook_moves_magic(square, position_alll) & ((side == white) ? white_rook : black_rook)) return 1;
+	if(get_rook_moves_magic(square, position_alll) & ((side == white) ? white_rooka : black_rooka)) return 1;
 
-	if(get_quean_moves_magic(square, position_alll) & ((side == white) ? white_quean : black_quean)) return 1;
+	if(get_quean_moves_magic(square, position_alll) & ((side == white) ? white_queana : black_queana)) return 1;
 
-	if(king_attack_table[square] & ((side == white) ? white_king : black_king)) return 1;
+	if(king_attack_table[square] & ((side == white) ? white_kinga : black_kinga)) return 1;
 
 	return 0;
-
-	}
-
-
-
-
-
+}
 
 
 
@@ -259,7 +253,7 @@ static inline void generate_posible_moves(Board bo, Moves *m) {
 					m->moves[m->counter++] = ENCODE(source, target,P,0,0,0,0,0);
 					//CHECK IF TWO MOVES FORWARD IS POSIBLE
 					if(source <= h2 && source >= a2 && (!GET((bo.position_alll), (target - 8)))) {
-						m->moves[m->counter++] = ENCODE(source, target-8,P,0,0,1,0,0);
+						m->moves[m->counter++] = ENCODE(source, (target-8),P,0,0,1,0,0);
 #if LOG_MOVES_PAWN
 						printf("white pawn moved 2 to %s%s\n",squers_name[source], squers_name[target - 8]);
 #endif
@@ -917,9 +911,9 @@ void print_move_list(Moves *move_list) {
 
 #define LOG_MOVES 1
 // FUNCTION USED TO GENARTES MOVE AND RETURN IT WE ACCEPT BOARD STRUCTURE AS INPUT
-static inline int make_move(Board *board, int move) {
-	Board temp;
-	memcpy(&temp, &board, sizeof(Board));
+int make_move(Board *board, int move) {
+	Board temp;// = &board;
+	memcpy(&temp, board, sizeof(Board));
 	//temp = board;  // LIKE MEMCPY WITHOUT ONE
 	//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
 	//DECODE MOVE
@@ -987,8 +981,8 @@ static inline int make_move(Board *board, int move) {
 	if(en_pesant) {
 		//	printf("Enpesant");
 		// GET RID OF THE PAWN ON THE SQUARE CUZZ ITS SAVED AS
-		(board->side == white) ? POP(board->piece[p], target  + 8)
-		: POP(board->piece[P], target - 8 );
+		(board->side == white) ? POP(board->piece[p], (target  + 8))
+		: POP(board->piece[P], (target - 8) );
 		//DOES IT WORKS
 		}
 
@@ -1027,12 +1021,13 @@ static inline int make_move(Board *board, int move) {
 			}
 		}
 
-	board->side ^= 1;  //UPDATE SIDE
+	
 	//UPDATE POSITION BITBOARDS CUZZ IS NESESARY TO CHECK IS CHECK
 	board->position_white = 0;
 	board->position_black = 0;
 	board->position_alll  = 0;
 	board->enpesant       = -1;
+	board->side          ^=  1;
 
 	for(int i = P; i <= K; i++) {
 		board->position_white |= board->piece[i];
@@ -1072,30 +1067,34 @@ static inline int make_move(Board *board, int move) {
 	//CHECK IS MOVE ILEGAL MOVE IS ILEGAL IF KING IS UNDER THE CHECK AFTER THE MOVE WE WANTED
 	//TO PLAY
 	///*
-	if(board->side == white && (!check_is_square_attacked_board(black, LSB(board->piece[K]), &board))) {
-		printf("Ilegel!!!");
-		system("pause");
-		memcpy(&board, &temp,sizeof(Board)); // RESTORE BOARD
-		return TRAP_ILEGAL;
+	//if(!board->side == white && (check_is_square_attacked_board(!board->side, LSB(board->piece[K]), &board))) {
+		//printf("Ilegel!!! LSB(board) = %s\n",squers_name[LSB(board->piece[K])]);
+		//system("pause");
+		//memcpy(&board, &temp,sizeof(Board)); // RESTORE BOARD
+		//return TRAP_ILEGAL;
+		//}
+		
+		int sq;
+		if(board->side == white)
+			sq = LSB(board->piece[k]);
+		else
+			sq = LSB(board->piece[K]);
+		
+		
+		int isincheck = check_is_square_attacked_board(board->side,sq, board);
+		if(isincheck == 1){
+		
+			printf("Is in Check %d!!!\n", isincheck);
+			printf("squere %s\n", squers_name[sq]);
+			print_board();
+			memcpy(board, &temp,sizeof(Board));
+    	//system("pause");
+    	board = &temp;
+			
+			return TRAP_ILEGAL;	
 		}
-
-
-
-	if(board->side == black
-	    && (!check_is_square_attacked_board(white, LSB(board->piece[k]), &board))) {
-		printf("Ilegel!!!");
-		system("pause");
-		memcpy(&board, &temp,sizeof(Board));
-		return TRAP_ILEGAL;
-		}
-	//SHOUD CHECK FOR MATE
-	//*/
-	return TRAP_MOVE_OK;
-
-
-
-
-
+		
+			return TRAP_MOVE_OK;	
 	}
 
 
