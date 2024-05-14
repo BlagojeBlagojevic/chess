@@ -1,5 +1,5 @@
 #include "bitboard.h"
-
+#include<math.h>
 //THIS PART REPRESENTS  MOVE GENERATOR PART OF A CHESS ENGENIN
 
 //WE WILL SEE WHAT TYPE OF STRUCTURE TO STORE MOVES ONE 32 BIT INT IN THIS MANER OR U32
@@ -64,7 +64,7 @@ typedef struct {
 // REPRESENTS BOARD STATE THER IS A 6 + 6 PIECES SO piece shoud have 12 bitboards witch represents state of the game
 typedef struct {
 
-	U64 piece[12];
+	U64 piece[13];
 	U64 position_white;
 	U64 position_black;
 	U64 position_alll;
@@ -97,7 +97,7 @@ Trap init_board_state(Board *bo) {
 	bo->position_alll   = bo->position_white | bo->position_black;
 	bo->side            = side;
 	bo->enpesant        = en_pesant;
-	memcpy(bo->castle, castle, SIZE(castle));  //MAYBE DOS NOT WORKS
+	memcpy(bo->castle, castle, sizeof(int)*4);  //MAYBE DOS NOT WORKS
 	return TRAP_OK;
 
 	};
@@ -121,7 +121,7 @@ Trap init_iternal_state(Board *bo) {
 	position_black = bo->position_black;
 	side           = bo->side;
 	en_pesant      = bo->enpesant;
-	memcpy(castle, bo->castle, SIZE(castle));
+	memcpy(castle, bo->castle, sizeof(int)*4);
 	return TRAP_OK;
 
 	};
@@ -165,12 +165,12 @@ static inline int check_is_square_attacked_board(int side, int square, Board *bo
 	U64 position_blacka = bo->position_black;
 	U64 position_alll   = bo->position_white & bo->position_black;
 	U64 en_pesanta      = bo->enpesant;
-  //int side            = bo->side;
+	//int side            = bo->side;
 	//PROBOBLY NO THIS
 	//if(square > 63 && square < 0) {
-		//printf("OVERFLOW!!!\n");
-		//return TRAP_OVERFLOW;
-		//}
+	//printf("OVERFLOW!!!\n");
+	//return TRAP_OVERFLOW;
+	//}
 
 
 
@@ -189,7 +189,7 @@ static inline int check_is_square_attacked_board(int side, int square, Board *bo
 	if(king_attack_table[square] & ((side == white) ? white_kinga : black_kinga)) return 1;
 
 	return 0;
-}
+	}
 
 
 
@@ -909,7 +909,7 @@ void print_move_list(Moves *move_list) {
 //
 
 
-#define LOG_MOVES 1
+#define LOG_MOVES 0
 // FUNCTION USED TO GENARTES MOVE AND RETURN IT WE ACCEPT BOARD STRUCTURE AS INPUT
 int make_move(Board *board, int move) {
 	Board temp;// = &board;
@@ -1021,7 +1021,7 @@ int make_move(Board *board, int move) {
 			}
 		}
 
-	
+
 	//UPDATE POSITION BITBOARDS CUZZ IS NESESARY TO CHECK IS CHECK
 	board->position_white = 0;
 	board->position_black = 0;
@@ -1042,13 +1042,14 @@ int make_move(Board *board, int move) {
 		board->castle[2] = 0;
 
 		}
-	else {
-		if(!GET(board->piece[R], a1)) {
-			board->castle[2] = 0;
-			if(!GET(board->piece[R], h1))
-				board->castle[0] = 0;
-			}
-		}
+
+	if(!GET(board->piece[R], a1))
+		board->castle[2] = 0;
+
+	if(!GET(board->piece[R], h1))
+		board->castle[0] = 0;
+
+
 
 	// BLACK
 	if(!GET(board->piece[k],e8)) {
@@ -1056,45 +1057,178 @@ int make_move(Board *board, int move) {
 		board->castle[3] = 0;
 
 		}
-	else {
-		if(!GET(board->piece[r], a8)) {
-			board->castle[3] = 0;
-			if(!GET(board->piece[R], h1))
-				board->castle[1] = 0;
-			}
-		}
+
+	if(!GET(board->piece[r], a8))
+		board->castle[3] = 0;
+
+	if(!GET(board->piece[R], h1))
+		board->castle[1] = 0;
+
+
 
 	//CHECK IS MOVE ILEGAL MOVE IS ILEGAL IF KING IS UNDER THE CHECK AFTER THE MOVE WE WANTED
 	//TO PLAY
 	///*
 	//if(!board->side == white && (check_is_square_attacked_board(!board->side, LSB(board->piece[K]), &board))) {
-		//printf("Ilegel!!! LSB(board) = %s\n",squers_name[LSB(board->piece[K])]);
-		//system("pause");
-		//memcpy(&board, &temp,sizeof(Board)); // RESTORE BOARD
-		//return TRAP_ILEGAL;
-		//}
-		
-		int sq;
-		if(board->side == white)
-			sq = LSB(board->piece[k]);
-		else
-			sq = LSB(board->piece[K]);
-		
-		
-		int isincheck = check_is_square_attacked_board(board->side,sq, board);
-		if(isincheck == 1){
-		
-			printf("Is in Check %d!!!\n", isincheck);
-			printf("squere %s\n", squers_name[sq]);
-			print_board();
-			memcpy(board, &temp,sizeof(Board));
-    	//system("pause");
-    	board = &temp;
-			
-			return TRAP_ILEGAL;	
+	//printf("Ilegel!!! LSB(board) = %s\n",squers_name[LSB(board->piece[K])]);
+	//system("pause");
+	//memcpy(&board, &temp,sizeof(Board)); // RESTORE BOARD
+	//return TRAP_ILEGAL;
+	//}
+
+	static int sq;
+	if(board->side == white)
+		sq = LSB(board->piece[k]);
+	else
+		sq = LSB(board->piece[K]);
+
+
+	int isincheck = check_is_square_attacked_board(board->side,sq, board);
+	//if(isincheck == 1 && 0) {
+
+	//printf("Is in Check %d!!!\n", isincheck);
+	//printf("squere %s\n", squers_name[sq]);
+	//print_board();
+	//memcpy(board, &temp,sizeof(Board));
+	//system("pause");
+	//board = &temp;
+
+	//return TRAP_ILEGAL;
+	//}
+
+	return TRAP_MOVE_OK;
+	}
+//enum { P, N, B, R, Q, K, p, n,  r, b, q, k };
+const float piece_value[] =  {0.7f, 3.1f, 3.3f, 5.0f, 10.0f, 10000.0f,
+                              0.7f, 3.1f, 3.3f, 5.0f, 10.0f, 10000.0f
+                             };
+
+#define LOG_EVALUATION 0
+
+#define inf 1000000.0f
+
+static inline float evaluation(Board board) {
+
+	float score = 0;
+	//int num_pieces[12] = {0};
+	for(size_t i = P; i <= K; i++) {
+		score=score  + (NUM(board.piece[i]) * piece_value[i]);
 		}
-		
-			return TRAP_MOVE_OK;	
+	for(size_t i = p; i <= k; i++) {
+		score = score - (NUM(board.piece[i]) * piece_value[i] );
+		}
+
+//	if(board.piece[K] == 0)
+//		score = 100000;
+//	if(board.piece[k] == 0)
+//		score = -100000;
+
+
+	// WE WILL TAKE INTO  A CONSIDORATITION THAT WHITE WANTS TO MAX SCORE AND BLACK TO MIN
+#if LOG_EVALUATION
+	printf("Board Evaluation %f\n\n",score);
+	//system("pause");
+#endif
+	float v = (float)rand() / (float)RAND_MAX;
+	//printf("v %f", v);
+	//system("pause");
+	//printf("score %f\n", score);
+	return score;
+
+
+	if(board.side == white)
+		return fabs(score + v);
+	else
+		return -1*fabs(score + v);
+
+	}
+
+
+
+
+
+static inline float  mini_max(Board board, int depth, int side) {
+
+	Moves m;
+	m.counter = 0;
+	Board temp;
+	memcpy(&temp, &board, sizeof(Board));
+	generate_posible_moves(board, &m);
+	if (depth == 0) return evaluation(board);
+
+	int max = -inf;
+	for (int i = 0; i < m.counter; i++)  {
+		make_move(&board, m.moves[i]);
+		float score = -1 * mini_max(board,depth - 1,board.side);
+		memcpy(&board, &temp,sizeof(Board));
+		if(score > max)
+			max = score;
+		}
+	return max;
+
+	}
+
+
+static inline float max(float maxEval, float eval) {
+
+	if(eval > maxEval)
+		return eval;
+
+	return maxEval;
+	}
+
+static inline float min(float minEval,float eval) {
+
+	if(eval < minEval)
+		return eval;
+
+	return minEval;
+	}
+
+
+float  mini_max_alfa_beta(Board board, int depth,float alfa, float beta, int side) {
+
+	Moves m;
+	//m.counter = 0;
+	Board temp;
+	memcpy(&temp, &board, sizeof(Board));
+	generate_posible_moves(board, &m);
+
+	if (depth == 0)
+		return evaluation(board);
+
+	if (side == white) {
+		float maxEval = -inf;
+
+		for (int i = 0; i < m.counter ; i++) {
+			make_move(&board,m.moves[i]);
+			float eval = mini_max_alfa_beta(board, depth - 1, alfa, beta,black);
+			memcpy(&board, &temp, sizeof(Board));
+			maxEval = max(maxEval, eval);
+			alfa = max(alfa, eval);
+			if (beta <= alfa)
+				break;
+			}
+
+		return maxEval;
+		}
+
+
+	else {
+		float minEval = inf;
+		for (int i = 0; i < m.counter; i++) {
+			make_move(&board,m.moves[i]);
+			float eval = mini_max_alfa_beta(board, depth - 1, alfa, beta,white);
+			memcpy(&board, &temp, sizeof(Board));
+			minEval = max(minEval, eval);
+			beta = min(beta, eval);
+			if (beta <= alfa)
+				break;
+			}
+
+		return minEval;
+		}
+
 	}
 
 
@@ -1102,3 +1236,64 @@ int make_move(Board *board, int move) {
 
 
 
+#define de 0
+
+static inline int get_index_of_best_move(Board board, Moves m) {
+	float score_white = -inf, score_black = inf;
+	int index = 0;
+	Board temp;
+	float score;
+	memcpy(&temp, &board, sizeof(Board));
+	//printf("Counter %d",m.counter);
+	//system("pause");
+
+	if(board.side == white) {
+		for(size_t i = 0; i < m.counter; i++) {
+
+			make_move(&board,m.moves[i]);
+
+			//float score = mini_max(board, 4, white);
+			score = mini_max_alfa_beta(board, 6,inf, -inf, black);
+			//float score = mini_(board, 4, white);
+#if de
+			printf("White %f ", score);
+			system("pause");
+#endif
+			memcpy(&board,&temp,sizeof(Board));
+			if(score > score_white) {
+				score_white  = score ;
+				index = i;
+#if de
+				printf("White Change %f");
+				system("pause");
+#endif
+				}
+			}
+		}
+
+	else {
+		for(size_t i = 0; i < m.counter; i++) {
+			make_move(&board,m.moves[i]);
+			//float score = mini_max(board, 3, black);
+			score = mini_max_alfa_beta(board, 6,-inf, inf, white);
+			memcpy(&board,&temp,sizeof(Board));
+#if de
+			printf("Black %f", score);
+			system("pause");
+#endif
+			//printf("")
+			if(score < score_black) {
+				score_black = score;
+				index = i;
+#if de
+				printf("%d\n", score);
+				printf("Black Change");
+				system("pause");
+#endif
+				}
+			}
+		}
+	printf("Board Evaluation white %f black %f\n\n",score_white, score_black);
+	return index;
+
+	}
