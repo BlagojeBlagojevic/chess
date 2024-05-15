@@ -906,13 +906,24 @@ void print_move_list(Moves *move_list) {
 	}
 
 
-//
+//SORT BEST MOVES 
+
+
+static inline sort_moves(Moves *m){
+	
+	
+	
+	
+}
+
+
+
 
 
 #define LOG_MOVES 0
 // FUNCTION USED TO GENARTES MOVE AND RETURN IT WE ACCEPT BOARD STRUCTURE AS INPUT
 int make_move(Board *board, int move) {
-	Board temp;// = &board;
+	static Board temp;// = &board;
 	memcpy(&temp, board, sizeof(Board));
 	//temp = board;  // LIKE MEMCPY WITHOUT ONE
 	//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
@@ -1003,20 +1014,20 @@ int make_move(Board *board, int move) {
 
 
 			case (c1):
-				POP(board->piece[R], d1);
+				POP(board->piece[R], a1);
 				SET(board->piece[R], d1);
 				break;
 
 			// black castles king side
 			case (g8):
-				POP(board->piece[r], g8);
-				SET(board->piece[r], g8);
+				POP(board->piece[r], h8);
+				SET(board->piece[r], f8);
 				break;
 
 
 			case (c8):
 				POP(board->piece[r], h1);
-				SET(board->piece[r], f1);
+				SET(board->piece[r], d1);
 				break;
 			}
 		}
@@ -1099,23 +1110,24 @@ int make_move(Board *board, int move) {
 	return TRAP_MOVE_OK;
 	}
 //enum { P, N, B, R, Q, K, p, n,  r, b, q, k };
-const float piece_value[] =  {0.7f, 3.1f, 3.3f, 5.0f, 10.0f, 10000.0f,
-                              0.7f, 3.1f, 3.3f, 5.0f, 10.0f, 10000.0f
+const float piece_value[] =  {1.0f, 3.1f, 3.3f, 5.0f, 10.0f, 10000.0f,
+                              1.0f, 3.1f, 3.3f, 5.0f, 10.0f, 10000.0f
                              };
 
 #define LOG_EVALUATION 0
 
 #define inf 1000000.0f
 
+__attribute__((always_inline))
 static inline float evaluation(Board board) {
 
 	float score = 0;
 	//int num_pieces[12] = {0};
-	for(size_t i = P; i <= K; i++) {
-		score=score  + (NUM(board.piece[i]) * piece_value[i]);
+	for(int i = P; i <= K; i++) {
+		score+=((float)NUM(board.piece[i]) * piece_value[i]);
 		}
-	for(size_t i = p; i <= k; i++) {
-		score = score - (NUM(board.piece[i]) * piece_value[i] );
+	for(int i = p; i <= k; i++) {
+		score -= ((float)NUM(board.piece[i]) * piece_value[i] );
 		}
 
 //	if(board.piece[K] == 0)
@@ -1129,17 +1141,17 @@ static inline float evaluation(Board board) {
 	printf("Board Evaluation %f\n\n",score);
 	//system("pause");
 #endif
-	float v = (float)rand() / (float)RAND_MAX;
+	float v = 2.0f * (float)rand() / (float)RAND_MAX - 1;
 	//printf("v %f", v);
 	//system("pause");
 	//printf("score %f\n", score);
-	return score;
+	return score + v;
 
 
-	if(board.side == white)
-		return fabs(score + v);
-	else
-		return -1*fabs(score + v);
+	//if(board.side == white)
+		//return -fabs(score + v);
+	//else
+		//return -1*fabs(score + v);
 
 	}
 
@@ -1156,19 +1168,19 @@ static inline float  mini_max(Board board, int depth, int side) {
 	generate_posible_moves(board, &m);
 	if (depth == 0) return evaluation(board);
 
-	int max = -inf;
+	int maxa = -inf;
 	for (int i = 0; i < m.counter; i++)  {
 		make_move(&board, m.moves[i]);
 		float score = -1 * mini_max(board,depth - 1,board.side);
 		memcpy(&board, &temp,sizeof(Board));
-		if(score > max)
-			max = score;
+		if(score > maxa)
+			maxa = score;
 		}
-	return max;
+	return maxa;
 
 	}
 
-
+__attribute__((always_inline))
 static inline float max(float maxEval, float eval) {
 
 	if(eval > maxEval)
@@ -1177,6 +1189,7 @@ static inline float max(float maxEval, float eval) {
 	return maxEval;
 	}
 
+__attribute__((always_inline))
 static inline float min(float minEval,float eval) {
 
 	if(eval < minEval)
@@ -1185,22 +1198,27 @@ static inline float min(float minEval,float eval) {
 	return minEval;
 	}
 
+//__attribute__((always_inline))
+static inline float  mini_max_alfa_beta(Board board, int depth,float alfa, float beta, int side) {
 
-float  mini_max_alfa_beta(Board board, int depth,float alfa, float beta, int side) {
-
-	Moves m;
-	//m.counter = 0;
-	Board temp;
-	memcpy(&temp, &board, sizeof(Board));
-	generate_posible_moves(board, &m);
+	
+	
+	//print_move_list(&m);
+	//system("pause");
 
 	if (depth == 0)
 		return evaluation(board);
+		
+		
+
+	Moves m;
+	Board temp;
+	generate_posible_moves(board, &m);
+	memcpy(&temp, &board, sizeof(Board));
 
 	if (side == white) {
 		float maxEval = -inf;
-
-		for (int i = 0; i < m.counter ; i++) {
+		for (size_t i = 0; i < m.counter ; i++) {
 			make_move(&board,m.moves[i]);
 			float eval = mini_max_alfa_beta(board, depth - 1, alfa, beta,black);
 			memcpy(&board, &temp, sizeof(Board));
@@ -1208,22 +1226,25 @@ float  mini_max_alfa_beta(Board board, int depth,float alfa, float beta, int sid
 			alfa = max(alfa, eval);
 			if (beta <= alfa)
 				break;
+				
+			
 			}
-
 		return maxEval;
 		}
 
 
 	else {
 		float minEval = inf;
-		for (int i = 0; i < m.counter; i++) {
+		for (size_t i = 0; i < m.counter; i++) {
 			make_move(&board,m.moves[i]);
-			float eval = mini_max_alfa_beta(board, depth - 1, alfa, beta,white);
+			float eval = mini_max_alfa_beta(board, depth - 1, alfa, beta, white);
 			memcpy(&board, &temp, sizeof(Board));
-			minEval = max(minEval, eval);
+			minEval = min(minEval, eval);
 			beta = min(beta, eval);
 			if (beta <= alfa)
 				break;
+				
+			
 			}
 
 		return minEval;
@@ -1232,7 +1253,70 @@ float  mini_max_alfa_beta(Board board, int depth,float alfa, float beta, int sid
 	}
 
 
+//DECLARING FUNCTIONS
+static inline float mini(Board board, int depth,float alfa, float beta);
+static inline float maxi(Board board, int depth,float alfa, float beta);
 
+//__attribute__((always_inline))
+static inline float maxi(Board board, int depth,float alfa, float beta){
+
+	if (depth == 0)
+		return evaluation(board);
+
+
+		
+	Moves m;
+	//m.counter = 0;
+	Board temp;
+	
+	generate_posible_moves(board, &m);
+	memcpy(&temp, &board, sizeof(Board));
+	float eval;
+	
+		float maxEval = -inf;
+		for (size_t i = 0; i < m.counter ; i++) {
+			make_move(&board,m.moves[i]);
+			eval = mini(board, depth - 1, alfa, beta);
+			memcpy(&board, &temp, sizeof(Board));
+			maxEval = max(maxEval, eval);
+			alfa = max(alfa, eval);
+			if (beta <= alfa)
+				break;
+				
+			
+			}
+		return maxEval;
+	
+}
+//__attribute__((always_inline))
+static inline float mini(Board board, int depth,float alfa, float beta){
+
+
+	if (depth == 0)
+		return evaluation(board);
+
+		
+	Moves m;
+	Board temp;
+	generate_posible_moves(board, &m);
+	memcpy(&temp, &board, sizeof(Board));
+	float eval;
+		
+		float minEval = inf;
+		for (size_t i = 0; i < m.counter; i++) {
+			make_move(&board,m.moves[i]);
+			eval = maxi(board, depth - 1, alfa, beta);
+			memcpy(&board, &temp, sizeof(Board));
+			minEval = min(minEval, eval);
+			beta = min(beta, eval);
+			if (beta <= alfa)
+				break;	
+			
+			}
+
+		return minEval;
+
+}
 
 
 
@@ -1242,7 +1326,7 @@ static inline int get_index_of_best_move(Board board, Moves m) {
 	float score_white = -inf, score_black = inf;
 	int index = 0;
 	Board temp;
-	float score;
+	float score = 0.0f;
 	memcpy(&temp, &board, sizeof(Board));
 	//printf("Counter %d",m.counter);
 	//system("pause");
@@ -1253,13 +1337,15 @@ static inline int get_index_of_best_move(Board board, Moves m) {
 			make_move(&board,m.moves[i]);
 
 			//float score = mini_max(board, 4, white);
-			score = mini_max_alfa_beta(board, 6,inf, -inf, black);
+			score = mini_max_alfa_beta(board, 4,-inf, inf,black);
+			//score = maxi(board, 4,-inf, inf);
+			memcpy(&board,&temp,sizeof(Board));
 			//float score = mini_(board, 4, white);
 #if de
 			printf("White %f ", score);
 			system("pause");
 #endif
-			memcpy(&board,&temp,sizeof(Board));
+		
 			if(score > score_white) {
 				score_white  = score ;
 				index = i;
@@ -1275,7 +1361,8 @@ static inline int get_index_of_best_move(Board board, Moves m) {
 		for(size_t i = 0; i < m.counter; i++) {
 			make_move(&board,m.moves[i]);
 			//float score = mini_max(board, 3, black);
-			score = mini_max_alfa_beta(board, 6,-inf, inf, white);
+			score = mini_max_alfa_beta(board, 4,-inf, inf, white);
+			//score = mini(board, 4,-inf, inf);
 			memcpy(&board,&temp,sizeof(Board));
 #if de
 			printf("Black %f", score);
