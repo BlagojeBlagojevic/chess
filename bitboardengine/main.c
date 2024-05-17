@@ -20,13 +20,13 @@
 #include<string.h>
 #include<math.h>
 
-#define SQUER_SIZE 50
+#define SQUER_SIZE 100
 
 #define WIDTH  8 * SQUER_SIZE
 #define HEIGHT 8 * SQUER_SIZE
 
 #define GREEN  0x00FF0000
-#define WHITE  0xFFFFFFFF
+#define WHITE  0x00800020
 #include "generator.h"
 #include "load_pieces.h"
 
@@ -46,7 +46,7 @@ void Draw_Board(SDL_Renderer *renderer) {
 			squer.y = y * SQUER_SIZE;
 			if((x + y) % 2 == 0) {
 
-				SDL_SetRenderDrawColor(renderer,0xFF,0xFF,0xFF,0xFF);
+				SDL_SetRenderDrawColor(renderer,128,0,32,0);
 				}
 			else {
 				SDL_SetRenderDrawColor(renderer,41,152,41,00);
@@ -146,82 +146,73 @@ int main(int argc,char** argv) {
 	init_slider_attacks(bishop);
 	init_slider_attacks(rook);
 	init_utils();
+#define start_fen_r "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/1NBQKBNR w KQkq - 0 1"
 	if(fen_loader(start_fen_full) == TRAP_FEN) {
 		printf("FEN ERROR !!!\n");
 		return -1;
 		}
-		
+
 	Board board;
-	static Moves m;
+	Moves m;
 	m.counter = 0;
 	print_board();
-	system("pause");
+	//system("pause");
 	srand(time(0));
 	//Piece_Loader(renderer,board,&pieces);
+	init_board_state(&board);
 	while(1) {
 		SDL_Event event;
-		if(SDL_PollEvent(&event)) {
+		while(SDL_PollEvent(&event)) {
 			//system("pause");
+			if(event.type == SDL_QUIT) {
+				return -1;
+				}
 			}
-			init_board_state(&board);
-			generate_posible_moves(board, &m);
-			int cou = 0;
-			while(1) {
-				int random = rand()%(m.counter);
-				cou++;
-				int state = make_move(&board, m.moves[random]);
-				if(state == TRAP_MOVE_OK)
-					break;
-				else;
-				if(cou == 1000){
-					if(board.side == white){
-						printf("Black wins");
-						system("pause");
-						return 0;
-					}
-					else{
-						printf("White wins");
-						system("pause");
-						return 0;
-					}
-				}
-					//system("pause");
-				//printf("Nestoasdasdasdasdasdaf");
-				}
-			init_iternal_state(&board);
+		
+		generate_posible_moves(board, &m,1,1);
+		//int index = get_index_of_best_move(board, m);
+		int index = index_best(board, m);
+		//printf("Index %d", index);
+		//system("pause");
+		make_move(&board,m.moves[index]);
 
-			SDL_RenderClear(renderer);
-			Draw_Board(renderer);
-			memset(&pieces,0,sizeof(Piece));
-			size_t num_of_pieces = Piece_Loader(renderer,board,&pieces);
-			//system("pause");
-			//system("pause");
-			for(size_t i = 0; i < num_of_pieces; i++) {
-				SDL_RenderCopy(renderer, pieces[i].texture, NULL,&pieces[i].position);
-				}
+		init_iternal_state(&board);
 
-			SDL_RenderPresent(renderer);
-			print_board();
-			
-			SDL_Delay(1000);
-			system("cls");
-			if(board.piece[k]==0){
-				
-				printf("White wins!!!\n");
-				system("pause");
-				break;
+		SDL_RenderClear(renderer);
+		Draw_Board(renderer);
+		//memset(&pieces,0,sizeof(Piece));
+		size_t num_of_pieces = Piece_Loader(renderer,board,&pieces);
+		//system("pause");
+		//system("pause");
+		for(size_t i = 0; i < num_of_pieces; i++) {
+			SDL_RenderCopy(renderer, pieces[i].texture, NULL,&pieces[i].position);
 			}
-			if(board.piece[K]==0){
-				
-				printf("Black wins!!!\n");
-				system("pause");
-				break;
+
+		SDL_RenderPresent(renderer);
+		//system("cls");
+		//print_board();
+
+		//SDL_Delay(1000);
+
+		if(board.piece[k]==0) {
+
+			printf("White wins!!!\n");
+			//system("pause");
+			break;
 			}
-			
-			
-			
-			
+		if(board.piece[K]==0) {
+			printf("Blacks wins!!!\n");
+			//system("pause");
+			break;
+			}
+
+
 		}
+
+
+
+
+
 
 	printf("Nesto");
 	return 0;
