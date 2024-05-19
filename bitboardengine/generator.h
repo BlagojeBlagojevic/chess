@@ -238,13 +238,13 @@ static inline void generate_posible_moves(Board bo, Moves *m, int is_capture, in
 					printf("white pawn promoted to b %s%s\n",squers_name[source], squers_name[target]);
 #endif
 //         ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
-				if(is_quiet){
-					m->moves[m->counter++] = ENCODE(source, target,P, Q, 0, 0,0,0);
-					m->moves[m->counter++] = ENCODE(source, target,P, R, 0, 0,0,0);
-					m->moves[m->counter++] = ENCODE(source, target,P, N, 0, 0,0,0);
-					m->moves[m->counter++] = ENCODE(source, target,P, B, 0, 0,0,0);
-				}
-					
+					if(is_quiet) {
+						m->moves[m->counter++] = ENCODE(source, target,P, Q, 0, 0,0,0);
+						m->moves[m->counter++] = ENCODE(source, target,P, R, 0, 0,0,0);
+						m->moves[m->counter++] = ENCODE(source, target,P, N, 0, 0,0,0);
+						m->moves[m->counter++] = ENCODE(source, target,P, B, 0, 0,0,0);
+						}
+
 					}
 
 				//ONE AND TWO FORWARD MOVES
@@ -257,8 +257,8 @@ static inline void generate_posible_moves(Board bo, Moves *m, int is_capture, in
 						m->moves[m->counter++] = ENCODE(source, target,P,0,0,0,0,0);
 					//CHECK IF TWO MOVES FORWARD IS POSIBLE
 					if(source <= h2 && source >= a2 && (!GET((bo.position_alll), (target - 8)))) {
-					if(is_quiet)
-						m->moves[m->counter++] = ENCODE(source, (target-8),P,0,0,1,0,0);
+						if(is_quiet)
+							m->moves[m->counter++] = ENCODE(source, (target-8),P,0,0,1,0,0);
 #if LOG_MOVES_PAWN
 						printf("white pawn moved 2 to %s%s\n",squers_name[source], squers_name[target - 8]);
 #endif
@@ -282,14 +282,14 @@ static inline void generate_posible_moves(Board bo, Moves *m, int is_capture, in
 					printf("white pawn capture promoted to b %s%s\n",squers_name[source], squers_name[target]);
 #endif
 //        ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
-					if(is_capture){
-							m->moves[m->counter++] = ENCODE(source, target,P, Q, 1, 0,0,0);
-							m->moves[m->counter++] = ENCODE(source, target,P, R, 1, 0,0,0);
-							m->moves[m->counter++] = ENCODE(source, target,P, N, 1, 0,0,0);
-							m->moves[m->counter++] = ENCODE(source, target,P, B, 1, 0,0,0);
-	
-					}
-					
+					if(is_capture) {
+						m->moves[m->counter++] = ENCODE(source, target,P, Q, 1, 0,0,0);
+						m->moves[m->counter++] = ENCODE(source, target,P, R, 1, 0,0,0);
+						m->moves[m->counter++] = ENCODE(source, target,P, N, 1, 0,0,0);
+						m->moves[m->counter++] = ENCODE(source, target,P, B, 1, 0,0,0);
+
+						}
+
 
 					}
 
@@ -318,10 +318,10 @@ static inline void generate_posible_moves(Board bo, Moves *m, int is_capture, in
 					printf("white pawn capture_EN to %s%s\n",squers_name[source], squers_name[target_en]);
 #endif
 //         ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
-				if(is_capture){
-					m->moves[m->counter++] = ENCODE(source, target_en,P, 0, 1, 0, 1, 0);
-				}
-					
+					if(is_capture) {
+						m->moves[m->counter++] = ENCODE(source, target_en,P, 0, 1, 0, 1, 0);
+						}
+
 
 					}
 
@@ -342,11 +342,11 @@ static inline void generate_posible_moves(Board bo, Moves *m, int is_capture, in
 				printf("WHITE CASTLE KING\n");
 #endif
 				//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
-				if(is_quiet){
+				if(is_quiet) {
 					m->moves[m->counter++] = ENCODE(source, g1,K, 0, 0, 0,0,1);
-	
-				}
-				
+
+					}
+
 				}
 			}
 		//QUEAN SIDE CASTLING
@@ -359,8 +359,8 @@ static inline void generate_posible_moves(Board bo, Moves *m, int is_capture, in
 				printf("WHITE CASTLE QUEAN\n");
 #endif
 				//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
-			if(is_quiet)
-				m->moves[m->counter++] = ENCODE(source, b1,K, 0, 0, 0,0,1);
+				if(is_quiet)
+					m->moves[m->counter++] = ENCODE(source, b1,K, 0, 0, 0,0,1);
 
 				}
 			}
@@ -591,14 +591,14 @@ static inline void generate_posible_moves(Board bo, Moves *m, int is_capture, in
 					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
 
 #endif
-					if(is_quiet){
+					if(is_quiet) {
 						m->moves[m->counter++] = ENCODE(source, target, p, q, 0, 0, 0, 0);
 						m->moves[m->counter++] = ENCODE(source, target, p, n, 0, 0, 0, 0);
 						m->moves[m->counter++] = ENCODE(source, target, p, r, 0, 0, 0, 0);
 						m->moves[m->counter++] = ENCODE(source, target, p, b, 0, 0, 0, 0);
-	
-					}
-					
+
+						}
+
 					}
 
 				//ONE AND TWO FORWARD MOVES
@@ -637,13 +637,13 @@ static inline void generate_posible_moves(Board bo, Moves *m, int is_capture, in
 					printf("black pawn capture promoted to b %s%s\n",squers_name[source], squers_name[target]);
 #endif
 					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
-					if(is_capture){
-								m->moves[m->counter++] = ENCODE(source, target, p, q, 1, 0, 0, 0);
-								m->moves[m->counter++] = ENCODE(source, target, p, n, 1, 0, 0, 0);
-								m->moves[m->counter++] = ENCODE(source, target, p, r, 1, 0, 0, 0);
-								m->moves[m->counter++] = ENCODE(source, target, p, b, 1, 0, 0, 0);		
-					}
-				
+					if(is_capture) {
+						m->moves[m->counter++] = ENCODE(source, target, p, q, 1, 0, 0, 0);
+						m->moves[m->counter++] = ENCODE(source, target, p, n, 1, 0, 0, 0);
+						m->moves[m->counter++] = ENCODE(source, target, p, r, 1, 0, 0, 0);
+						m->moves[m->counter++] = ENCODE(source, target, p, b, 1, 0, 0, 0);
+						}
+
 					}
 
 				//ONE AND TWO FORWARD MOVES
@@ -711,7 +711,7 @@ static inline void generate_posible_moves(Board bo, Moves *m, int is_capture, in
 #endif
 				//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
 				if(is_quiet)
-				m->moves[m->counter++] = ENCODE(source, c8, k, 0, 0, 0, 0, 1);
+					m->moves[m->counter++] = ENCODE(source, c8, k, 0, 0, 0, 0, 1);
 				}
 			}
 
@@ -730,7 +730,7 @@ static inline void generate_posible_moves(Board bo, Moves *m, int is_capture, in
 #endif
 					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
 					if(is_quiet)
-					m->moves[m->counter++] = ENCODE(source, target, k, 0, 0, 0, 0, 0);
+						m->moves[m->counter++] = ENCODE(source, target, k, 0, 0, 0, 0, 0);
 					}
 
 				else { //CAPTURE
@@ -739,7 +739,7 @@ static inline void generate_posible_moves(Board bo, Moves *m, int is_capture, in
 #endif
 					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
 					if(is_capture)
-					m->moves[m->counter++] = ENCODE(source, target, k, 0, 1, 0, 0, 0);
+						m->moves[m->counter++] = ENCODE(source, target, k, 0, 1, 0, 0, 0);
 					}
 
 				POP(attacks,target);
@@ -770,7 +770,7 @@ static inline void generate_posible_moves(Board bo, Moves *m, int is_capture, in
 #endif
 					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
 					if(is_quiet)
-					m->moves[m->counter++] = ENCODE(source, target, n, 0, 0, 0, 0, 0);
+						m->moves[m->counter++] = ENCODE(source, target, n, 0, 0, 0, 0, 0);
 					}
 
 				else { //CAPTURE
@@ -779,7 +779,7 @@ static inline void generate_posible_moves(Board bo, Moves *m, int is_capture, in
 #endif
 					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
 					if(is_capture)
-					m->moves[m->counter++] = ENCODE(source, target, n, 0, 1, 0, 0, 0);
+						m->moves[m->counter++] = ENCODE(source, target, n, 0, 1, 0, 0, 0);
 					}
 
 				POP(attacks,target);
@@ -810,7 +810,7 @@ static inline void generate_posible_moves(Board bo, Moves *m, int is_capture, in
 #endif
 					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
 					if(is_quiet)
-					m->moves[m->counter++] = ENCODE(source, target, b, 0, 0, 0, 0, 0);
+						m->moves[m->counter++] = ENCODE(source, target, b, 0, 0, 0, 0, 0);
 					}
 
 				else { //CAPTURE
@@ -820,7 +820,7 @@ static inline void generate_posible_moves(Board bo, Moves *m, int is_capture, in
 					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
 					//b is alredy declared so bo
 					if(is_capture)
-					m->moves[m->counter++] = ENCODE(source, target, (b), 0, 1, 0, 0, 0);
+						m->moves[m->counter++] = ENCODE(source, target, (b), 0, 1, 0, 0, 0);
 					}
 
 				POP(attacks,target);
@@ -849,7 +849,7 @@ static inline void generate_posible_moves(Board bo, Moves *m, int is_capture, in
 #endif
 					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
 					if(is_quiet)
-					m->moves[m->counter++] = ENCODE(source, target, r, 0, 0, 0, 0, 0);
+						m->moves[m->counter++] = ENCODE(source, target, r, 0, 0, 0, 0, 0);
 					}
 
 				else { //CAPTURE
@@ -858,7 +858,7 @@ static inline void generate_posible_moves(Board bo, Moves *m, int is_capture, in
 #endif
 					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
 					if(is_capture)
-					m->moves[m->counter++] = ENCODE(source, target, r, 0, 1, 0, 0, 0);
+						m->moves[m->counter++] = ENCODE(source, target, r, 0, 1, 0, 0, 0);
 					}
 
 				POP(attacks,target);
@@ -887,7 +887,7 @@ static inline void generate_posible_moves(Board bo, Moves *m, int is_capture, in
 #endif
 					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
 					if(is_quiet)
-					m->moves[m->counter++] = ENCODE(source, target, q, 0, 0, 0, 0, 0);
+						m->moves[m->counter++] = ENCODE(source, target, q, 0, 0, 0, 0, 0);
 					}
 
 				else { //CAPTURE
@@ -896,7 +896,7 @@ static inline void generate_posible_moves(Board bo, Moves *m, int is_capture, in
 #endif
 					//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
 					if(is_capture)
-					m->moves[m->counter++] = ENCODE(source, target, q, 0, 1, 0, 0, 0);
+						m->moves[m->counter++] = ENCODE(source, target, q, 0, 1, 0, 0, 0);
 					}
 
 				POP(attacks,target);
@@ -905,31 +905,30 @@ static inline void generate_posible_moves(Board bo, Moves *m, int is_capture, in
 			POP(bitboard, source);
 			}
 		}
-		
-		
-		//ORDER OF MOVES FOR SEARCH
-		for(int i = 0; i < m->counter;i++){
-			//IF IS CAPTURE FIRST
-			if(CAPTURE(m->moves[i])){
-				int temp = m->moves[i];
-				m->moves[i] = m->moves[0];
-				m->moves[0] = temp;
+
+
+	/* //ORDER OF MOVES FOR SEARCH
+	for(int i = 0; i < m->counter; i++) {
+		//IF IS CAPTURE FIRST
+		if(CAPTURE(m->moves[i])) {
+			int temp = m->moves[i];
+			m->moves[i] = m->moves[0];
+			m->moves[0] = temp;
 			}
-			// IF PIECE IS CAPTURED LAST
-			
-			if(check_is_square_attacked_board(bo.side,TARGET(m->moves[i]),&bo) 
-			&& (PIECE(m->moves[i]) == r ||  PIECE(m->moves[i]) == R 
-			||  PIECE(m->moves[i]) == Q ||  PIECE(m->moves[i]) == q ))
-			{
-				int temp = m->moves[m->counter - 1];
-				m->moves[i] = m->moves[m->counter - 1];
-				m->moves[m->counter - 1] = temp;
-				
+		// IF PIECE IS CAPTURED LAST
+
+		if(check_is_square_attacked_board(bo.side,TARGET(m->moves[i]),&bo)
+		    && (PIECE(m->moves[i]) == r ||  PIECE(m->moves[i]) == R
+		        ||  PIECE(m->moves[i]) == Q ||  PIECE(m->moves[i]) == q )) {
+			int temp = m->moves[m->counter - 1];
+			m->moves[i] = m->moves[m->counter - 1];
+			m->moves[m->counter - 1] = temp;
+
 			}
 		}
-		
-		
-		
+		//*/
+
+
 	}
 
 
@@ -1185,11 +1184,165 @@ static inline int make_move(Board *board, int move) {
 //enum { P, N, B, R, Q, K, p, n,  r, b, q, k };
 const int piece_value[] =  {100, 300, 300, 500, 1000, 10000,
                             100, 300, 300, 500, 1000, 10000
-                             };
+                           };
 
 #define LOG_EVALUATION 0
 
 #define inf 1000000
+const int pawn_score[64] = 
+{
+    90,  90,  90,  90,  90,  90,  90,  90,
+    30,  30,  30,  40,  40,  30,  30,  30,
+    20,  20,  30,  30,  30,  30,  20,  20,
+    10,  10,  10,  20,  20,  10,  10,  10,
+     5,   5,  10,  20,  20,   5,   5,   5,
+     0,   0,   0,   5,   5,   0,   0,   0,
+     0,   0,   0, -10, -10,   0,   0,   0,
+     0,   0,   0,   0,   0,   0,   0,   0
+};
+
+const int pawn_scoreb[64] = 
+{
+     0,   0,   0,   0,   0,   0,   0,   0,
+     0,   0,   0, -10, -10,   0,   0,   0,
+     5,   5,  10,  20,  20,   5,   5,   5,
+     0,   0,   0,   5,   5,   0,   0,   0,
+     10,  10,  10,  20,  20,  10,  10,  10,
+     20,  20,  30,  30,  30,  30,  20,  20,
+     30,  30,  30,  40,  40,  30,  30,  30,
+		 90,  90,  90,  90,  90,  90,  90,  90,
+};
+
+
+
+// knight positional score
+const int knight_score[64] = 
+{
+    -5,   0,   0,   0,   0,   0,   0,  -5,
+    -5,   0,   0,  10,  10,   0,   0,  -5,
+    -5,   5,  20,  20,  20,  20,   5,  -5,
+    -5,  10,  20,  30,  30,  20,  10,  -5,
+    -5,  10,  20,  30,  30,  20,  10,  -5,
+    -5,   5,  20,  10,  10,  20,   5,  -5,
+    -5,   0,   0,   0,   0,   0,   0,  -5,
+    -5, -10,   0,   0,   0,   0, -10,  -5
+};
+
+const int knight_scoreb[64] = 
+{
+  	 -5, -10,   0,   0,   0,   0, -10,  -5,
+		 -5,   0,   0,  10,  10,   0,   0,  -5,
+		 -5,   5,  20,  20,  20,  20,   5,  -5,
+		 -5,  10,  20,  30,  30,  20,  10,  -5,
+		 -5,  10,  20,  30,  30,  20,  10,  -5,
+		 -5,   5,  20,  10,  10,  20,   5,  -5,
+		 -5,   0,   0,   0,   0,   0,   0,  -5,
+		 -5,   0,   0,   0,   0,   0,   0,  -5,
+};
+
+
+
+
+
+
+
+
+
+// bishop positional score
+const int bishop_score[64] = 
+{
+     0,   0,   0,   0,   0,   0,   0,   0,
+     0,   0,   0,   0,   0,   0,   0,   0,
+     0,  20,   0,  10,  10,   0,  20,   0,
+     0,   0,  10,  20,  20,  10,   0,   0,
+     0,   0,  10,  20,  20,  10,   0,   0,
+     0,  10,   0,   0,   0,   0,  10,   0,
+     0,  30,   0,   0,   0,   0,  30,   0,
+     0,   0, -10,   0,   0, -10,   0,   0
+};
+
+const int bishop_scoreb[64] = 
+{
+		 0,   0, -10,   0,   0, -10,   0,   0,
+		 0,  30,   0,   0,   0,   0,  30,   0,
+		 0,  10,   0,   0,   0,   0,  10,   0,
+		 0,   0,  10,  20,  20,  10,   0,   0,
+		 0,   0,  10,  20,  20,  10,   0,   0,
+		 0,  20,   0,  10,  10,   0,  20,   0,
+     0,   0,   0,   0,   0,   0,   0,   0,
+     0,   0,   0,   0,   0,   0,   0,   0,
+     
+     
+     
+     
+     
+     
+};
+
+
+
+
+// rook positional score
+const int rook_score[64] =
+{
+    50,  50,  50,  50,  50,  50,  50,  50,
+    50,  50,  50,  50,  50,  50,  50,  50,
+     0,   0,  10,  20,  20,  10,   0,   0,
+     0,   0,  10,  20,  20,  10,   0,   0,
+     0,   0,  10,  20,  20,  10,   0,   0,
+     0,   0,  10,  20,  20,  10,   0,   0,
+     0,   0,  10,  20,  20,  10,   0,   0,
+     0,   0,   0,  20,  20,   0,   0,   0
+
+};
+
+const int rook_scoreb[64] =
+{
+		0,   0,   0,  20,  20,   0,   0,   0,
+		0,   0,  10,  20,  20,  10,   0,   0,
+		0,   0,  10,  20,  20,  10,   0,   0,
+		0,   0,  10,  20,  20,  10,   0,   0,
+		0,   0,  10,  20,  20,  10,   0,   0,
+		0,   0,  10,  20,  20,  10,   0,   0,
+    50,  50,  50,  50,  50,  50,  50,  50,
+    50,  50,  50,  50,  50,  50,  50,  50,
+};
+
+
+
+// king positional score
+const int king_score[64] = 
+{
+-30,-40,-40,-50,-50,-40,-40,-30,
+-30,-40,-40,-50,-50,-40,-40,-30,
+-30,-40,-40,-50,-50,-40,-40,-30,
+-30,-40,-40,-50,-50,-40,-40,-30,
+-20,-30,-30,-40,-40,-30,-30,-20,
+-10,-20,-20,-20,-20,-20,-20,-10,
+ 20, 20,  0,  0,  0,  0, 20, 20,
+ 20, 30, 10,  0,  0, 10, 30, 20
+};
+
+const int king_scoreb[64] = 
+{
+20, 30, 10,  0,  0, 10, 30, 20,
+20, 20,  0,  0,  0,  0, 20, 20,
+-10,-20,-20,-20,-20,-20,-20,-10,
+-20,-30,-30,-40,-40,-30,-30,-20,
+-30,-40,-40,-50,-50,-40,-40,-30,
+-30,-40,-40,-50,-50,-40,-40,-30,
+-30,-40,-40,-50,-50,-40,-40,-30,
+-30,-40,-40,-50,-50,-40,-40,-30,
+     
+};
+
+
+
+
+
+
+
+
 
 __attribute__((always_inline))
 static inline int evaluation(Board board) {
@@ -1203,10 +1356,10 @@ static inline int evaluation(Board board) {
 		score -= (NUM(board.piece[i]) * piece_value[i] );
 		}
 
-	if(board.piece[K] == 0)
-		score = -100000;
-	if(board.piece[k] == 0)
-		score = 100000;
+//	if(board.piece[K] == 0)
+	//	score = -100000;
+	//if(board.piece[k] == 0)
+	//	score = 100000;
 
 
 	// WE WILL TAKE INTO  A CONSIDORATITION THAT WHITE WANTS TO MAX SCORE AND BLACK TO MIN
@@ -1214,11 +1367,12 @@ static inline int evaluation(Board board) {
 	printf("Board Evaluation %d\n\n",score);
 	//system("pause");
 #endif
-	int v = 0;//rand()%100 - 50;
+	int v = rand()%300 - 100;
 	//printf("v %f", v);
 	//system("pause");
 	//printf("score %f\n", score);
-	return score + v;
+	int s = (board.side == white) ? 1 : -1;
+	return (score * v) * s;
 
 
 	//if(board.side == white)
@@ -1227,6 +1381,7 @@ static inline int evaluation(Board board) {
 	//return -1*fabs(score + v);
 
 	}
+
 
 
 
@@ -1254,15 +1409,15 @@ static inline int min(int minEval,int eval) {
 //__attribute__((always_inline))
 
 
-static inline int capture_search(Board board,int depth ,int alfa,int beta,int side){
+static inline int capture_search(Board board,int depth,int alfa,int beta,int side) {
 
-	
-	if (depth == 0){
+
+	if (depth == 0) {
 		return evaluation(board);
-	}
+		}
 	Moves m;
 	Board temp;
-	generate_posible_moves(board, &m,1 ,0);	
+	generate_posible_moves(board, &m, 1, 1);
 	memcpy(&temp, &board, sizeof(Board));
 
 	if ((side == white) && m.counter) {
@@ -1275,8 +1430,8 @@ static inline int capture_search(Board board,int depth ,int alfa,int beta,int si
 			alfa = max(alfa, eval);
 			if (beta <= alfa)
 				break;
-				
-			
+
+
 			}
 		return maxEval;
 		}
@@ -1292,74 +1447,131 @@ static inline int capture_search(Board board,int depth ,int alfa,int beta,int si
 			beta = min(beta, eval);
 			if (beta <= alfa)
 				break;
-				
-			
+
+
 			}
 
 		return minEval;
 		}
-		
+
 	else
 		return evaluation(board);
-	
-
-	
-}
 
 
-static inline int  search(Board board, int depth,int alfa, int beta, int side) {
 
-	
-	
-	if (depth == 0){
-	//	int a = capture_search(board,alfa,beta,!side);
-		//return evaluation(board); 
-		if(side == white)
-		   return capture_search(board, 4,-inf, inf, white);
-		else
-			return capture_search(board, 4,-inf, inf, black);
 	}
+
+static inline int Quiescansearch(Board b, int alpha, int beta ) {
+
+	int stand_pat = evaluation(b);
+	//SWITCH MOVE CONTEXT
+
+
+	if(stand_pat >= beta) {
+		//system("pause");
+		return beta;
+		}
+
+	if(alpha < stand_pat)
+		alpha = stand_pat;
+
 	Moves m;
 	Board temp;
-	generate_posible_moves(board, &m,1 ,1);	
+	generate_posible_moves(b, &m,1,0);
+	//print_move_list(&m);
+	//system("pause");
+	//printf("Stand_pat: %d\n", stand_pat);
+	memcpy(&temp, &b, sizeof(Board));
+	for(int i = 0; i < m.counter; i++) {
+		make_move(&b,m.moves[i]);
+		int score = -Quiescansearch(b, -beta,-alpha);
+		memcpy(&b,&temp,sizeof(Board));
+		if(score >= beta)
+			return beta;
+
+		if(score > alpha)
+			alpha = score;
+		}
+	return alpha;
+	}
+
+static inline int Quiescansearch_d(Board b,int depth, int alpha, int beta ) {
+
+	if(depth == 0)
+		return evaluation(b);
+
+	int stand_pat = evaluation(b);
+	//SWITCH MOVE CONTEXT
+
+
+	if(stand_pat >= beta) {
+		//system("pause");
+		return beta;
+		}
+
+	if(alpha < stand_pat)
+		alpha = stand_pat;
+
+	Moves m;
+	Board temp;
+	generate_posible_moves(b, &m,1,0);
+	//print_move_list(&m);
+	//system("pause");
+	//printf("Stand_pat: %d\n", stand_pat);
+	memcpy(&temp, &b, sizeof(Board));
+	for(int i = 0; i < m.counter; i++) {
+		make_move(&b,m.moves[i]);
+		int score = -Quiescansearch_d(b,depth - 1, -beta, -alpha);
+		memcpy(&b,&temp,sizeof(Board));
+		if(score >= beta)
+			return beta;
+
+		if(score > alpha)
+			alpha = score;
+		}
+	return alpha;
+	}
+
+
+
+
+
+static inline int  search(Board board, int depth,int alfa, int beta) {
+	if( depth == 0 ) return Quiescansearch(board,alfa,beta);
+	//if( depth == 0 ) return Quiescansearch_d(board,3,-inf, inf);
+	Moves m;
+	Board temp;
 	memcpy(&temp, &board, sizeof(Board));
-
-	if (side == white) {
-		int maxEval = -inf;
-		for (size_t i = 0; i < m.counter ; i++) {
-			make_move(&board,m.moves[i]);
-			int eval = search(board, depth - 1, alfa, beta,black);
-			memcpy(&board, &temp, sizeof(Board));
-			maxEval = max(maxEval, eval);
-			alfa = max(alfa, eval);
-			if (beta <= alfa)
-				break;
-				
-			
-			}
-		return maxEval;
+	generate_posible_moves(board, &m, 1, 1);
+	for (int i = 0; i < m.counter; i++ )  {
+		make_move(&board,m.moves[i]);
+		int score = -search(board, depth - 1,-beta, -alfa );
+		memcpy(&board, &temp,sizeof(Board));
+		if( score >= beta )
+			return beta;   //  fail hard beta-cutoff
+		if( score > alfa )
+			alfa = score; // alpha acts like max in MiniMax
 		}
+	return alfa;
 
-
-	else {
-		int minEval = inf;
-		for (size_t i = 0; i < m.counter; i++) {
-			make_move(&board,m.moves[i]);
-			int eval = search(board, depth - 1, alfa, beta, white);
-			memcpy(&board, &temp, sizeof(Board));
-			minEval = min(minEval, eval);
-			beta = min(beta, eval);
-			if (beta <= alfa)
-				break;
-				
-			
-			}
-
-		return minEval;
-		}
 
 	}
 
+
+static inline NegaC(Board b,int depth, int min,int max) {
+	int score = min;
+	while (min != max) {
+		int alpha = (min + max) / 2;
+		score = search(b, depth, alpha, alpha + 1);
+		if ( score > alpha)
+			min = score;
+		else
+			max = score;
+		}
+	return score;
+
+
+	}
 
 
 
@@ -1377,10 +1589,250 @@ static inline int index_best(Board board, Moves m) {
 	//printf("Counter %d",m.counter);
 	//system("pause");
 
+
+	for(size_t i = 0; i < m.counter; i++) {
+		make_move(&board,m.moves[i]);
+		score = search(board, 3,-inf, score_black);
+		//score = NegaC(board,4,-inf,inf);
+		memcpy(&board,&temp,sizeof(Board));
+		if(score < score_black) {
+			score_black  = score ;
+			index = i;
+
+			}
+		}
+	//printf("Board Evaluation %d\n\n",score_black);
+	return index;
+
+
+
+	}
+//MAKE HASH MAP STRUCTURE WITCH WILL STORE PREVIUSLY SEARCHED BOARDS
+//IT WILL HAVE 100MB OF MEMORY(SIZE) AND USE ZOBRIST HASH FOR ACCESING BOARD VALUE
+
+#define HASHSIZE 100000000
+//4157458668
+
+typedef struct {
+
+	int *score;
+	U32 *zob;
+
+	} Hashmap;
+
+
+U32 zob_table[64][12];
+
+void init_hashmap(Hashmap *m) {
+
+	m->score = (int*)calloc(HASHSIZE,sizeof(int));
+	m->zob = (U32*)calloc(HASHSIZE,sizeof(U32));
+	for(size_t j = 0; j < 12; j++)
+	for(size_t i = 0; i < 64; i++) {
+		zob_table[i][j] = rand32();
+		}
+	}
+
+static inline  U32 hash(Board b) {
+	U64 key = 0;
+	for(int i = P; i <= k ; i++){
+		U64 bitboard = b.piece[i];
+		
+		while(bitboard){
+			int lsb = LSB(bitboard);
+			key ^= zob_table[lsb][i];
+			
+			POP(bitboard, lsb);
+		}
+		
+		
+	}
+
+	//printf("hash %u\n", key % HASHSIZE);
+	//system("pause");
+	return (U32)key % HASHSIZE;
+	}
+static inline void store_position(Hashmap m,Board b, int score) {
+
+	U32 i = hash(b);
+	m.zob[i] = i;
+	m.score[i] = score;
+	}
+
+static inline int return_score(Hashmap m, Board b, int *is_store) {
+	U32 a = hash(b);
+	if(a == m.zob[a]) {
+		*is_store = 1;
+		}
+	else {
+		*is_store = 0;
+		}
+
+	return m.score[a];
+	}
+
+
+static inline int Quiescansearch_dT(Board b,int depth, int alpha, int beta ) {
+
+	if(depth == 0)
+		return evaluation(b);
+
+	int stand_pat = evaluation(b);
+	//SWITCH MOVE CONTEXT
+
+
+	if(stand_pat >= beta) {
+		//system("pause");
+		return beta;
+		}
+
+	if(alpha < stand_pat)
+		alpha = stand_pat;
+
+	Moves m;
+	Board temp;
+	generate_posible_moves(b, &m,1,0);
+	//print_move_list(&m);
+	//system("pause");
+	//printf("Stand_pat: %d\n", stand_pat);
+	memcpy(&temp, &b, sizeof(Board));
+	for(int i = 0; i < m.counter; i++) {
+		make_move(&b,m.moves[i]);
+		int score = -Quiescansearch_dT(b,depth - 1, -beta, -alpha);
+		memcpy(&b,&temp,sizeof(Board));
+		if(score >= beta)
+			return beta;
+
+		if(score > alpha)
+			alpha = score;
+		}
+	return alpha;
+	}
+
+static inline int QuiescansearchT(Board b, Hashmap ma, int alpha, int beta ) {
+
+			
+	int stand_pat = evaluation(b);
+	//SWITCH MOVE CONTEXT
+
+
+	if(stand_pat >= beta) {
+		store_position(ma, b,beta);
+		return beta;
+		}
+
+	if(alpha < stand_pat)
+		alpha = stand_pat;
+
+	Moves m;
+	Board temp;
+	generate_posible_moves(b, &m,1,0);
+	if(m.counter == 0)
+		{
+			//init_iternal_state(&b);
+			//print_board();
+			//system("pause");
+			store_position(ma, b, alpha);
+			return alpha;
+		}
+	memcpy(&temp, &b, sizeof(Board));
+	for(int i = 0; i < m.counter; i++) {
+		make_move(&b,m.moves[i]);
+		int *is = 0;
+		//int score = return_score(ma, b, &is);
+	  //if(is == 1)
+		  // return score;
+		
+		int score = -QuiescansearchT(b, ma, -beta,-alpha);
+		//store_position(ma, b, score);
+		memcpy(&b,&temp,sizeof(Board));
+		if(score >= beta){
+			store_position(ma, b, beta);
+			return beta;
+		}
+			
+
+		if(score > alpha)
+			alpha = score;
+		}
+	store_position(ma, b, alpha);	
+	return alpha;
+	
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+static inline int  searchT(Board board,Hashmap ma, int depth,int alfa, int beta) {
+	//if( depth == 0 ) return Quiescansearch(board,alfa,beta);
+	int *is;
+	//Hashmap m, Board b, int *is_store
+	int score = return_score(ma, board, &is);
+	if(is == 1)
+		return score;
+
+	else {
+
+
+		if( depth == 0 ) {
+			
+			//int score_end = Quiescansearch_dT(board,3, alfa, beta);
+			//int score_end = QuiescansearchT(board, ma, alfa, beta);
+			int score_end = Quiescansearch(board, alfa, beta);
+			//int score_end  = search_captureT(board,alfa,beta);
+			store_position(ma, board, score_end);
+			return score_end;
+			}
+		Moves m;
+		Board temp;
+		memcpy(&temp, &board, sizeof(Board));
+		generate_posible_moves(board, &m, 1, 1);
+		for (int i = 0; i < m.counter; i++ )  {
+			make_move(&board,m.moves[i]);
+			int score = -searchT(board,ma, depth - 1,-beta, -alfa );
+			//store_position(ma, board, score);
+			memcpy(&board, &temp,sizeof(Board));
+			if( score >= beta ){
+			
+				return beta;   //  fail hard beta-cutoff
+			}
+				
+			if( score > alfa )
+				alfa = score; // alpha acts like max in MiniMax
+			}
+		//store_position(ma, board, alfa);	
+		return alfa;
+		}
+
+	}
+
+
+
+//ALL MOVE ARE POSITIVE SO WE NEAD TO MAX + VALUE FOR MOVE
+static inline int index_bestT(Board board, Hashmap ma, Moves m) {
+	int score_white = -inf, score_black = inf;
+	int index = 0;
+	Board temp;
+	int score = 0;
+	memcpy(&temp, &board, sizeof(Board));
+	//printf("Counter %d",m.counter);
+	//system("pause");
+	//Board board,Hashmap ma, int depth,int alfa, int beta) {
+
+
 	if(board.side == white) {
 		for(size_t i = 0; i < m.counter; i++) {
 			make_move(&board,m.moves[i]);
-			score = search(board, 4,-inf, inf,black);	
+			score = searchT(board, ma, 4, -inf, inf);	
 			memcpy(&board,&temp,sizeof(Board));
 			//float score = mini_(board, 4, white);
 
@@ -1399,7 +1851,7 @@ static inline int index_best(Board board, Moves m) {
 	else {
 		for(size_t i = 0; i < m.counter; i++) {
 			make_move(&board,m.moves[i]);
-		  score = search(board, 4,-inf, inf, white);
+		  score = searchT(board, ma, 4,  -inf, inf);
 		
 			memcpy(&board,&temp,sizeof(Board));
 
@@ -1414,6 +1866,9 @@ static inline int index_best(Board board, Moves m) {
 			return index;
 			
 		}
-	
 
-	}
+}
+
+
+
+
