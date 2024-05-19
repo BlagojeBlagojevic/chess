@@ -160,6 +160,9 @@ int main(int argc,char** argv) {
 	srand(time(0));
 	//Piece_Loader(renderer,board,&pieces);
 	init_board_state(&board);
+	Hashmap ma;
+	init_hashmap(&ma);
+	
 	while(1) {
 		SDL_Event event;
 		while(SDL_PollEvent(&event)) {
@@ -170,12 +173,10 @@ int main(int argc,char** argv) {
 			}
 		
 		generate_posible_moves(board, &m,1,1);
-		//int index = get_index_of_best_move(board, m);
-		int index = index_best(board, m);
-		//printf("Index %d", index);
-		//system("pause");
-		make_move(&board,m.moves[index]);
-
+		
+		int index = index_bestT(board, ma, m);
+	
+		make_move(&board, m.moves[index]);
 		init_iternal_state(&board);
 
 		SDL_RenderClear(renderer);
@@ -192,7 +193,7 @@ int main(int argc,char** argv) {
 		//system("cls");
 		//print_board();
 
-		//SDL_Delay(1000);
+		SDL_Delay(1000);
 
 		if(board.piece[k]==0) {
 
@@ -208,10 +209,6 @@ int main(int argc,char** argv) {
 
 
 		}
-
-
-
-
 
 
 	printf("Nesto");
