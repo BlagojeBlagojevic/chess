@@ -71,6 +71,7 @@ typedef struct {
 	int side;
 	int enpesant;
 	int castle[4];
+	int best_move;
 	//MAYBE OTHER STATES
 	} Board;
 
@@ -1367,12 +1368,12 @@ static inline int evaluation(Board board) {
 	printf("Board Evaluation %d\n\n",score);
 	//system("pause");
 #endif
-	int v = rand()%300 - 100;
+	int v = rand()%100 - 50;
 	//printf("v %f", v);
 	//system("pause");
 	//printf("score %f\n", score);
 	int s = (board.side == white) ? 1 : -1;
-	return (score * v) * s;
+	return (score ) * s;
 
 
 	//if(board.side == white)
@@ -1406,207 +1407,7 @@ static inline int min(int minEval,int eval) {
 	return minEval;
 	}
 
-//__attribute__((always_inline))
-
-
-static inline int capture_search(Board board,int depth,int alfa,int beta,int side) {
-
-
-	if (depth == 0) {
-		return evaluation(board);
-		}
-	Moves m;
-	Board temp;
-	generate_posible_moves(board, &m, 1, 1);
-	memcpy(&temp, &board, sizeof(Board));
-
-	if ((side == white) && m.counter) {
-		int maxEval = -inf;
-		for (size_t i = 0; i < m.counter ; i++) {
-			make_move(&board,m.moves[i]);
-			int eval = capture_search(board, depth - 1, alfa, beta,black);
-			memcpy(&board, &temp, sizeof(Board));
-			maxEval = max(maxEval, eval);
-			alfa = max(alfa, eval);
-			if (beta <= alfa)
-				break;
-
-
-			}
-		return maxEval;
-		}
-
-
-	else if ((side == black) && m.counter) {
-		int minEval = inf;
-		for (size_t i = 0; i < m.counter && m.counter; i++) {
-			make_move(&board,m.moves[i]);
-			int eval = capture_search(board, depth - 1, alfa, beta, white);
-			memcpy(&board, &temp, sizeof(Board));
-			minEval = min(minEval, eval);
-			beta = min(beta, eval);
-			if (beta <= alfa)
-				break;
-
-
-			}
-
-		return minEval;
-		}
-
-	else
-		return evaluation(board);
-
-
-
-	}
-
-static inline int Quiescansearch(Board b, int alpha, int beta ) {
-
-	int stand_pat = evaluation(b);
-	//SWITCH MOVE CONTEXT
-
-
-	if(stand_pat >= beta) {
-		//system("pause");
-		return beta;
-		}
-
-	if(alpha < stand_pat)
-		alpha = stand_pat;
-
-	Moves m;
-	Board temp;
-	generate_posible_moves(b, &m,1,0);
-	//print_move_list(&m);
-	//system("pause");
-	//printf("Stand_pat: %d\n", stand_pat);
-	memcpy(&temp, &b, sizeof(Board));
-	for(int i = 0; i < m.counter; i++) {
-		make_move(&b,m.moves[i]);
-		int score = -Quiescansearch(b, -beta,-alpha);
-		memcpy(&b,&temp,sizeof(Board));
-		if(score >= beta)
-			return beta;
-
-		if(score > alpha)
-			alpha = score;
-		}
-	return alpha;
-	}
-
-static inline int Quiescansearch_d(Board b,int depth, int alpha, int beta ) {
-
-	if(depth == 0)
-		return evaluation(b);
-
-	int stand_pat = evaluation(b);
-	//SWITCH MOVE CONTEXT
-
-
-	if(stand_pat >= beta) {
-		//system("pause");
-		return beta;
-		}
-
-	if(alpha < stand_pat)
-		alpha = stand_pat;
-
-	Moves m;
-	Board temp;
-	generate_posible_moves(b, &m,1,0);
-	//print_move_list(&m);
-	//system("pause");
-	//printf("Stand_pat: %d\n", stand_pat);
-	memcpy(&temp, &b, sizeof(Board));
-	for(int i = 0; i < m.counter; i++) {
-		make_move(&b,m.moves[i]);
-		int score = -Quiescansearch_d(b,depth - 1, -beta, -alpha);
-		memcpy(&b,&temp,sizeof(Board));
-		if(score >= beta)
-			return beta;
-
-		if(score > alpha)
-			alpha = score;
-		}
-	return alpha;
-	}
-
-
-
-
-
-static inline int  search(Board board, int depth,int alfa, int beta) {
-	if( depth == 0 ) return Quiescansearch(board,alfa,beta);
-	//if( depth == 0 ) return Quiescansearch_d(board,3,-inf, inf);
-	Moves m;
-	Board temp;
-	memcpy(&temp, &board, sizeof(Board));
-	generate_posible_moves(board, &m, 1, 1);
-	for (int i = 0; i < m.counter; i++ )  {
-		make_move(&board,m.moves[i]);
-		int score = -search(board, depth - 1,-beta, -alfa );
-		memcpy(&board, &temp,sizeof(Board));
-		if( score >= beta )
-			return beta;   //  fail hard beta-cutoff
-		if( score > alfa )
-			alfa = score; // alpha acts like max in MiniMax
-		}
-	return alfa;
-
-
-	}
-
-
-static inline NegaC(Board b,int depth, int min,int max) {
-	int score = min;
-	while (min != max) {
-		int alpha = (min + max) / 2;
-		score = search(b, depth, alpha, alpha + 1);
-		if ( score > alpha)
-			min = score;
-		else
-			max = score;
-		}
-	return score;
-
-
-	}
-
-
-
-#define de 0
-
-
-#define de 0
-
-static inline int index_best(Board board, Moves m) {
-	int score_white = -inf, score_black = inf;
-	int index = 0;
-	Board temp;
-	int score = 0;
-	memcpy(&temp, &board, sizeof(Board));
-	//printf("Counter %d",m.counter);
-	//system("pause");
-
-
-	for(size_t i = 0; i < m.counter; i++) {
-		make_move(&board,m.moves[i]);
-		score = search(board, 3,-inf, score_black);
-		//score = NegaC(board,4,-inf,inf);
-		memcpy(&board,&temp,sizeof(Board));
-		if(score < score_black) {
-			score_black  = score ;
-			index = i;
-
-			}
-		}
-	//printf("Board Evaluation %d\n\n",score_black);
-	return index;
-
-
-
-	}
+//
 //MAKE HASH MAP STRUCTURE WITCH WILL STORE PREVIUSLY SEARCHED BOARDS
 //IT WILL HAVE 100MB OF MEMORY(SIZE) AND USE ZOBRIST HASH FOR ACCESING BOARD VALUE
 
@@ -1670,47 +1471,14 @@ static inline int return_score(Hashmap m, Board b, int *is_store) {
 
 	return m.score[a];
 	}
+static inline int QuiescansearchT(Board b, Hashmap ma, int alpha, int beta ) {
 
-
-static inline int Quiescansearch_dT(Board b,int depth, int alpha, int beta ) {
-
-	if(depth == 0)
-		return evaluation(b);
-
-	int stand_pat = evaluation(b);
-	//SWITCH MOVE CONTEXT
-
-
-	if(stand_pat >= beta) {
-		//system("pause");
-		return beta;
-		}
-
-	if(alpha < stand_pat)
-		alpha = stand_pat;
-
+	
 	Moves m;
 	Board temp;
 	generate_posible_moves(b, &m,1,0);
-	//print_move_list(&m);
-	//system("pause");
-	//printf("Stand_pat: %d\n", stand_pat);
-	memcpy(&temp, &b, sizeof(Board));
-	for(int i = 0; i < m.counter; i++) {
-		make_move(&b,m.moves[i]);
-		int score = -Quiescansearch_dT(b,depth - 1, -beta, -alpha);
-		memcpy(&b,&temp,sizeof(Board));
-		if(score >= beta)
-			return beta;
-
-		if(score > alpha)
-			alpha = score;
-		}
-	return alpha;
-	}
-
-static inline int QuiescansearchT(Board b, Hashmap ma, int alpha, int beta ) {
-
+	
+	memcpy(&temp, &b, sizeof(Board));		
 			
 	int stand_pat = evaluation(b);
 	//SWITCH MOVE CONTEXT
@@ -1724,18 +1492,6 @@ static inline int QuiescansearchT(Board b, Hashmap ma, int alpha, int beta ) {
 	if(alpha < stand_pat)
 		alpha = stand_pat;
 
-	Moves m;
-	Board temp;
-	generate_posible_moves(b, &m,1,0);
-	if(m.counter == 0)
-		{
-			//init_iternal_state(&b);
-			//print_board();
-			//system("pause");
-			store_position(ma, b, alpha);
-			return alpha;
-		}
-	memcpy(&temp, &b, sizeof(Board));
 	for(int i = 0; i < m.counter; i++) {
 		make_move(&b,m.moves[i]);
 		int *is = 0;
@@ -1761,6 +1517,45 @@ static inline int QuiescansearchT(Board b, Hashmap ma, int alpha, int beta ) {
 
 }
 
+static inline int  searchT_capture(Board board,Hashmap ma, int depth,int alfa, int beta) {
+
+	
+
+
+		if( depth == 0 ) {
+			
+			//int score_end = QuiescansearchT(board, ma, alfa, beta);
+			int score_end = evaluation(board);
+			
+			//store_position(ma, board, score_end);
+			return score_end;
+			}
+		Moves m;
+		Board temp;
+		memcpy(&temp, &board, sizeof(Board));
+		generate_posible_moves(board, &m, 1, 0);
+		if(m.counter == 0)
+			return evaluation(board); 
+		for (int i = 0; i < m.counter; i++ )  {
+			make_move(&board,m.moves[i]);
+			int score = -searchT_capture(board,ma, depth - 1,-beta, -alfa );
+			//store_position(ma, board, score);
+			memcpy(&board, &temp,sizeof(Board));
+			if( score >= beta ){
+				
+				return beta;   //  fail hard beta-cutoff
+			}
+				
+			if( score > alfa )
+			
+				alfa = score; // alpha acts like max in MiniMax
+			}
+		//store_position(ma, board, alfa);	
+		return alfa;
+		
+
+	}
+
 
 
 
@@ -1780,15 +1575,14 @@ static inline int  searchT(Board board,Hashmap ma, int depth,int alfa, int beta)
 	if(is == 1)
 		return score;
 
-	else {
+	{
 
 
 		if( depth == 0 ) {
 			
-			//int score_end = Quiescansearch_dT(board,3, alfa, beta);
 			//int score_end = QuiescansearchT(board, ma, alfa, beta);
-			int score_end = Quiescansearch(board, alfa, beta);
-			//int score_end  = search_captureT(board,alfa,beta);
+			//int score_end = evaluation(board);
+			int score_end = searchT_capture(board, ma, 7,  alfa, beta);
 			store_position(ma, board, score_end);
 			return score_end;
 			}
@@ -1802,14 +1596,16 @@ static inline int  searchT(Board board,Hashmap ma, int depth,int alfa, int beta)
 			//store_position(ma, board, score);
 			memcpy(&board, &temp,sizeof(Board));
 			if( score >= beta ){
-			
+				
 				return beta;   //  fail hard beta-cutoff
 			}
 				
 			if( score > alfa )
+			
 				alfa = score; // alpha acts like max in MiniMax
 			}
-		//store_position(ma, board, alfa);	
+		//store_position(ma, board, alfa);
+			
 		return alfa;
 		}
 
@@ -1817,58 +1613,30 @@ static inline int  searchT(Board board,Hashmap ma, int depth,int alfa, int beta)
 
 
 
-//ALL MOVE ARE POSITIVE SO WE NEAD TO MAX + VALUE FOR MOVE
 static inline int index_bestT(Board board, Hashmap ma, Moves m) {
-	int score_white = -inf, score_black = inf;
+	int min_eval = inf;
 	int index = 0;
 	Board temp;
 	int score = 0;
 	memcpy(&temp, &board, sizeof(Board));
-	//printf("Counter %d",m.counter);
-	//system("pause");
-	//Board board,Hashmap ma, int depth,int alfa, int beta) {
-
-
-	if(board.side == white) {
-		for(size_t i = 0; i < m.counter; i++) {
+	for(int i = 0; i < m.counter; i++){
 			make_move(&board,m.moves[i]);
-			score = searchT(board, ma, 4, -inf, inf);	
+		  int score = searchT(board, ma, 5,  -inf, inf);
 			memcpy(&board,&temp,sizeof(Board));
-			//float score = mini_(board, 4, white);
-
-		
-			if(score < score_black) {
-				score_black  = score ;
+			//printf("score : %d\n",score);
+			if(score < min_eval){
+				
+				min_eval = score ;
 				index = i;
-
-				}
+				
 			}
-	printf("Board Evaluation %d\n\n",score_black);
+		
+	}
+	if(board.side == white)
+		printf("White evaluation %d\n", min_eval);
+		
+	if(board.side == black)
+		printf("Black evaluation %d\n", min_eval);
 	return index;
-			
-		}
-
-	else {
-		for(size_t i = 0; i < m.counter; i++) {
-			make_move(&board,m.moves[i]);
-		  score = searchT(board, ma, 4,  -inf, inf);
-		
-			memcpy(&board,&temp,sizeof(Board));
-
-			//printf("")
-			if(score >= white) {
-				score_white = score;
-				index = i;
-
-				}
-			}
-			printf("Board Evaluation %d\n\n",score_white);
-			return index;
-			
-		}
-
 }
-
-
-
 
