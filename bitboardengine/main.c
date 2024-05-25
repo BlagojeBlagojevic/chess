@@ -172,11 +172,13 @@ int main(int argc,char** argv) {
 				}
 			}
 		
-		generate_posible_moves(board, &m,1,1);
+		//generate_posible_moves(board, &m,1,1);
 		
-		int index = index_bestT(board, ma, m);
-	
-		make_move(&board, m.moves[index]);
+		//int index = index_bestT(board, ma, m);
+		search_position(ma,&board,6); 
+		//print_move(board.best_move);
+		make_move(&board, board.best_move);
+		//system("pause");
 		init_iternal_state(&board);
 
 		SDL_RenderClear(renderer);
