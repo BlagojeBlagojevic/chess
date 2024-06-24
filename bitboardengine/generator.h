@@ -912,6 +912,7 @@ static inline void generate_posible_moves(Board bo, Moves *m, int is_capture, in
 
 
 	///* //ORDER OF MOVES FOR SEARCH
+/*
 	for(int i = 0; i < m->counter; i++) {
 		//IF IS CAPTURE FIRST
 		if(CAPTURE(m->moves[i])) {
@@ -1029,7 +1030,7 @@ static inline int make_move(Board *board, int move) {
 
 
 	if(capture) {
-		static int start_piece, end_piece;   // we will loop over this pieces
+		int start_piece, end_piece;   // we will loop over this pieces
 
 		if(board->side == white) {
 			start_piece = p;
@@ -1192,7 +1193,7 @@ const int piece_value[] =  {100, 300, 300, 500, 1000, 10000,
 
 #define LOG_EVALUATION 0
 
-#define inf 1000000
+#define inf 10000000
 int mg_table[6][64] = {{
 		0,   0,   0,   0,   0,   0,  0,   0,
 		98, 134,  61,  95,  68, 126, 34, -11,
@@ -1289,12 +1290,13 @@ static inline int min(int minEval,int eval) {
 //IT WILL HAVE 100MB OF MEMORY(SIZE) AND USE ZOBRIST HASH FOR ACCESING BOARD VALUE
 
 #define HASHSIZE 107374182
+//#define HASHSIZE 10737418
 //4157458668
 
 typedef struct {
 
 	int *score;
-	U32 *zob;
+	U64 *zob;
 
 	} Hashmap;
 
@@ -1304,21 +1306,23 @@ U64 zob_table[64][12];
 void init_hashmap(Hashmap *m) {
 
 	m->score = (int*)calloc(HASHSIZE,sizeof(int));
-	m->zob = (U32*)calloc(HASHSIZE,sizeof(U32));
+	m->zob = (U64*)calloc(HASHSIZE,sizeof(U64));
 	for(size_t j = 0; j < 12; j++)
 		for(size_t i = 0; i < 64; i++) {
 			zob_table[i][j] = rand64();
+			printf("%lu\n" , zob_table[i][j]);
 			}
 	}
 
-static inline  U32 hash(Board b) {
+__attribute__((always_inline))
+static inline  U64 hash(Board b) {
 	U64 key = 0;
 	for(int i = P; i <= k ; i++) {
 		U64 bitboard = b.piece[i];
 
 		while(bitboard) {
 			int lsb = LSB(bitboard);
-			key ^= zob_table[lsb][i] >> b.side;
+			key ^= zob_table[lsb][i];
 
 			POP(bitboard, lsb);
 			}
@@ -1328,32 +1332,33 @@ static inline  U32 hash(Board b) {
 
 	//printf("hash %u\n", key % HASHSIZE);
 	//system("pause");
-	return (U32)key % HASHSIZE;
+	return key;
 	}
+__attribute__((always_inline))	
 static inline void store_position(Hashmap m,Board b, int score) {
 
-	U32 i = hash(b);
-	m.zob[i] = i;
-	m.score[i] = score;
+	U64 i = hash(b);
+	m.zob[i%HASHSIZE] = i;
+	m.score[i%HASHSIZE] = score;
 	}
-
+__attribute__((always_inline))
 static inline int return_score(Hashmap m, Board b, int *is_store) {
-	U32 a = hash(b);
-	if(a == m.zob[a]) {
+	U64 a = hash(b);
+	if(a == m.zob[a%HASHSIZE]) {
 		*is_store = 1;
 		}
 	else {
 		*is_store = 0;
 		}
 
-	return m.score[a];
+	return m.score[a%HASHSIZE];
 	}
 
 
 //NEW
 //VALUE OF PIECES
-const int evaluation_piece[] = {1000,  3000,  3000,  5000,  10000,  100000,
-                                -1000, -3000, -3000, -5000, -10000, -100000,
+const int evaluation_piece[] = {100,  300,  300,  500,  1000,  1000000,
+                                -100, -300, -300, -500, -1000, -1000000,
                                 };
 
 
@@ -1370,7 +1375,7 @@ const int pawn_score[64] = {
 
 // knight positional score
 const int knight_score[64] = {
-	-5,   0,   0,   0,   0,   0,   0,  -5,
+		-5,   0,   0,   0,   0,   0,   0,  -5,
 	  -5,   0,   0,  10,  10,   0,   0,  -5,
 	  -5,   5,  20,  20,  20,  20,   5,  -5,
 	  -5,  10,  20,  30,  30,  20,  10,  -5,
@@ -1430,8 +1435,8 @@ const int mirror_score[128] = {
 	a8, b8, c8, d8, e8, f8, g8, h8
 	};
 
-
-static inline int evaluate(Board board) {
+__attribute__((always_inline))
+static inline int evaluate( Board board) {
 
 	int piece, square;
 	int score = 0;
@@ -1483,16 +1488,17 @@ static inline int evaluate(Board board) {
 
 			POP(bitboard, square);
 			}
-			
+
 
 		}
 	if((board.side == white) && (board.piece[K] == 0))
-		score-=1000000;
-	
+		score-=100000;
+
 	if((board.side == black) && (board.piece[k] == 0))
-		score+=1000000;
-	
-	
+		score+=100000;
+
+
+	//store_position(hm, board, (board.side == white) ? score : -score);
 	return (board.side == white) ? score : -score;
 
 	}
@@ -1504,19 +1510,19 @@ static inline int evaluate(Board board) {
 
 
 static inline int quiescence(Hashmap hm, Board *board, int alpha, int beta) {
-	
+
 	Board temp;
 	Moves m;
 	copy_board();
-		
-	int *is_store;
+
+	int is_store;
 	int sc = return_score(hm, temp, &is_store);
 	if(is_store == 1)
 		return sc;
 
 	int evaluation = evaluate(temp);
 	if (evaluation >= beta) {
-		//store_position(hm, temp, beta);
+		store_position(hm, temp, beta);
 		return beta;
 		}
 
@@ -1526,24 +1532,26 @@ static inline int quiescence(Hashmap hm, Board *board, int alpha, int beta) {
 
 	generate_posible_moves(temp, &m,1,0);
 
+	
 	for (int i = 0; i < m.counter; i++) {
-		
+
 		board->ply++;
 		make_move(board,m.moves[i]);
 		int score = -quiescence(hm, board, -beta, -alpha);
 		board->ply--;
-		take_board();
+		
 		if (score >= beta) {
-			//store_position(hm, temp, beta);
+			store_position(hm, temp, beta);
 			return beta;
 			}
-
+		take_board();
 		if (score > alpha) {
 			alpha = score;
 
 			}
 		}
-	store_position(hm, temp, alpha);
+	//copy_
+	//store_position(hm, *board, alpha);
 	return alpha;
 	}
 
@@ -1561,29 +1569,41 @@ static inline int quiescence(Hashmap hm, Board *board, int alpha, int beta) {
 
 
 static inline int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
-	//board->ply = 0;
+	board->ply = 0;
+	
+
+	if(depth == 0) {
+		//return evaluate(hm, temp);
+		//int is_store;
+		//int sc = return_score(hm, temp, &is_store);
+		//if(is_store == 1)
+	//		return sc;
+//		else
+
+			int score = quiescence(hm, board, alpha, beta);
+			store_position(hm, *board, score);
+			return score;
+			//return quiescence(hm, board, -inf, inf);
+			//return evaluate(board);
+		}
+
 	Board temp;
 	copy_board();
-	
-	if(depth == 0){
-		//return evaluate(temp);
-		return quiescence(hm, board, alpha, beta);
-	}
-		
-	int best_sofar;
+	int best_sofar = 0;
 	int old_alpha = alpha;
 
 	Moves m;
 	generate_posible_moves(temp, &m,1,1);
 
-	for(int i = 0; i < m.counter; i++) {
+	for(size_t i = 0; i < m.counter; i++) {
 
 		make_move(board, m.moves[i]);
+
 		int score = -negamax(hm, board, -beta, -alpha, depth - 1);
 		board->ply--;
 		take_board();
 		if (score >= beta) {
-
+			//store_position(hm, *board, beta);
 			return beta;
 			}
 
@@ -1607,12 +1627,16 @@ static inline int negamax(Hashmap hm, Board *board, int alpha, int beta, int dep
 
 
 
-void search_position(Hashmap hm, Board *board,int depth) {
+static inline void search_position(Hashmap hm, Board *board,int depth) {
 	// find best move within a given position
-	int score = negamax(hm, board, -50000, 50000, depth);
+	//int score = negamax(hm, board, -inf, inf, depth);
+	int score = negamax(hm, board, -inf, inf, depth);
+	//for(int i = 3; i <= depth; i++ ){
+//			score = negamax(hm, board, score, inf, i);
 	printf("score is %d\n", score);
-	}
+//	}
 
+	}
 
 
 
