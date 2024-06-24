@@ -10,8 +10,8 @@
 typedef uint64_t U64;
 typedef uint32_t U32;
 enum {bishop, rook, knight, king, quean, pawn};        // REPRESENT PIECES
-enum {white, black, none};  														// REPRESENT PIECES   COLORS
-enum { P, N, B, R, Q, K, p, n, b, r, q, k };
+enum {white, black};  														// REPRESENT PIECES   COLORS
+enum { P, N, B, R, Q, K, p, n,  r, b, q, k };
 //SQUERS REPRESENTATION
 typedef enum {
 
@@ -47,7 +47,12 @@ typedef enum trap {
 	TRAP_OK,
 	TRAP_FEN,   //THIS TRAP IS FOR FEN LOADING ERRROR
 	TRAP_NONINIT,
-
+	TRAP_CHECKMATE,
+	TRAP_ILEGAL,
+	TRAP_MOVE_OK,
+	TRAP_MATE,
+	TRAP_DRAW,
+	//TRAP_
 
 	} Trap;
 
@@ -76,7 +81,7 @@ static inline int NUM(U64 bitboard) {
 
 		}
 #if LOG_COUNT
-	printf("\nNUM OF BITS %d\n", num);
+	printf("\nNUM OF BITS %d\n", count);
 #endif
 	return count;
 
@@ -1324,7 +1329,7 @@ void init_utils() {
 		}
 
 	}
-
+__attribute__((always_inline))
 static inline U64 get_rook_moves_magic(int square, U64 occupancy) {
 	// get bishop attacks assuming current board occupancy
 	occupancy &= rook_mask[square];
@@ -1334,7 +1339,7 @@ static inline U64 get_rook_moves_magic(int square, U64 occupancy) {
 	//ERROR I MEAN THIIS IS TEM FIX BUT IS WORKING
 	return (rook_attacks[square][occupancy] & utiliti_rook[square]);
 	}
-
+__attribute__((always_inline))
 static inline U64 get_quean_moves_magic(int squere, U64 pieces) {
 
 	U64 b_moves = get_bishop_moves_magic(squere, pieces);
@@ -1347,15 +1352,10 @@ static inline U64 get_quean_moves_magic(int squere, U64 pieces) {
 //THIS IS SECTION WITCH REPRESENT IS SQUARE ATACKED BY PIECE
 //THIS TYPE OF FUNCTION WILL BE USED AS A CHECKING FOR CHESS AND IN BOARD EVALUATION
 //MAYBE GO WITH SEPARETE IMPLEMENTATION
-
+__attribute__((always_inline))
 static inline int check_is_square_attacked(int side, int square) {
 
-	//PROBOBLY NO THIS
-	if(square > 63 && square < 0) {
-		printf("OVERFLOW!!!\n");
-		return TRAP_OVERFLOW;
-		}
-
+	
 
 
 	if((side == white) && (black_pawn_attack_table[square] & white_pawn)) return 1;
