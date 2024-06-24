@@ -19,7 +19,7 @@
 #include<stdlib.h>
 #include<string.h>
 #include<math.h>
-
+#include<time.h>
 #define SQUER_SIZE 100
 
 #define WIDTH  8 * SQUER_SIZE
@@ -162,7 +162,7 @@ int main(int argc,char** argv) {
 	init_board_state(&board);
 	Hashmap ma;
 	init_hashmap(&ma);
-	
+
 	while(1) {
 		SDL_Event event;
 		while(SDL_PollEvent(&event)) {
@@ -171,11 +171,11 @@ int main(int argc,char** argv) {
 				return -1;
 				}
 			}
-		
+
 		//generate_posible_moves(board, &m,1,1);
-		
+
 		//int index = index_bestT(board, ma, m);
-		search_position(ma,&board,6); 
+		search_position(ma,&board, 6);
 		//print_move(board.best_move);
 		make_move(&board, board.best_move);
 		//system("pause");
