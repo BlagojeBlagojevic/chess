@@ -912,7 +912,7 @@ static inline void generate_posible_moves(Board bo, Moves *m, int is_capture, in
 
 
 	///* //ORDER OF MOVES FOR SEARCH
-/*
+
 	for(int i = 0; i < m->counter; i++) {
 		//IF IS CAPTURE FIRST
 		if(CAPTURE(m->moves[i])) {
@@ -920,7 +920,7 @@ static inline void generate_posible_moves(Board bo, Moves *m, int is_capture, in
 			m->moves[i] = m->moves[0];
 			m->moves[0] = temp;
 			}
-		// IF PIECE IS CAPTURED LAST
+		/// IF PIECE IS CAPTURED LAST
 
 		if(check_is_square_attacked_board(bo.side,TARGET(m->moves[i]),&bo)
 		    && (PIECE(m->moves[i]) == r ||  PIECE(m->moves[i]) == R
@@ -1290,7 +1290,7 @@ static inline int min(int minEval,int eval) {
 //IT WILL HAVE 100MB OF MEMORY(SIZE) AND USE ZOBRIST HASH FOR ACCESING BOARD VALUE
 
 #define HASHSIZE 107374182
-//#define HASHSIZE 10737418
+//#define HASHSIZE 1073741
 //4157458668
 
 typedef struct {
@@ -1357,8 +1357,8 @@ static inline int return_score(Hashmap m, Board b, int *is_store) {
 
 //NEW
 //VALUE OF PIECES
-const int evaluation_piece[] = {100,  300,  300,  500,  1000,  1000000,
-                                -100, -300, -300, -500, -1000, -1000000,
+const int evaluation_piece[] = {1000,  3000,  3000,  5000,  10000,  1000000,
+                                -1000, -3000, -3000, -5000, -10000, -1000000,
                                 };
 
 
@@ -1459,7 +1459,7 @@ static inline int evaluate( Board board) {
 					score+=rook_score[square];
 					break;
 				case Q:
-					score+=(rook_score[square] + bishop_score[square]);
+					score+=(rook_score[square] + bishop_score[square]) /2;
 					break;
 				case K:
 					score+=king_score[square];
@@ -1478,7 +1478,7 @@ static inline int evaluate( Board board) {
 					score-=rook_score[mirror_score[square]];
 					break;
 				case q:
-					score-=(rook_score[mirror_score[square]] + bishop_score[mirror_score[square]]);
+					score-=(rook_score[mirror_score[square]] + bishop_score[mirror_score[square]]) /2;
 					break;
 				case k:
 					score-=king_score[mirror_score[square]];
@@ -1499,7 +1499,7 @@ static inline int evaluate( Board board) {
 
 
 	//store_position(hm, board, (board.side == white) ? score : -score);
-	return (board.side == white) ? score : -score;
+	return (board.side == white) ? score+rand()%20 : -score-rand()%20;
 
 	}
 
@@ -1551,7 +1551,7 @@ static inline int quiescence(Hashmap hm, Board *board, int alpha, int beta) {
 			}
 		}
 	//copy_
-	//store_position(hm, *board, alpha);
+	store_position(hm, *board, alpha);
 	return alpha;
 	}
 
@@ -1568,20 +1568,18 @@ static inline int quiescence(Hashmap hm, Board *board, int alpha, int beta) {
 
 
 
-static inline int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
+int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 	board->ply = 0;
+	
 	
 
 	if(depth == 0) {
 		//return evaluate(hm, temp);
-		//int is_store;
-		//int sc = return_score(hm, temp, &is_store);
-		//if(is_store == 1)
-	//		return sc;
+	
 //		else
 
 			int score = quiescence(hm, board, alpha, beta);
-			store_position(hm, *board, score);
+			//store_position(hm, *board, score);
 			return score;
 			//return quiescence(hm, board, -inf, inf);
 			//return evaluate(board);
