@@ -72,6 +72,7 @@ typedef enum trap {
 
 #define LOG_COUNT 0
 //GET NUMBER OF BITS IN BITBOARD
+__attribute__((always_inline))
 static inline int NUM(U64 bitboard) {
 
 	int count = 0;
@@ -88,6 +89,7 @@ static inline int NUM(U64 bitboard) {
 	}
 //get lsb bit in bitboard
 #define LOG_LSB 0
+__attribute__((always_inline))
 static inline int LSB(U64 bitboard) {
 	if(bitboard) {
 
@@ -778,6 +780,7 @@ void init_attack_table() {
 //THIS SECTION REPRESENT POSIBLE MOVES DEPENDING OF DISTRIBUTION OF OTHER PIECES NOT LOKING INTO TYPE
 //LAST SQUERE SHOUD BE 1 CUZ OF CAPTURE
 //BRUTE FORCE METOD
+__attribute__((always_inline))
 static inline U64 get_bishop_moves(int squere, U64 pieces) {
 
 	U64 posible_moves = 0;
@@ -827,6 +830,7 @@ static inline U64 get_bishop_moves(int squere, U64 pieces) {
 	}
 
 //rook
+__attribute__((always_inline))
 static inline U64 get_rook_moves(int squere, U64 pieces) {
 
 	U64 posible_moves = 0;
@@ -872,6 +876,7 @@ static inline U64 get_rook_moves(int squere, U64 pieces) {
 	}
 
 //quean
+__attribute__((always_inline))
 static inline U64 get_quean_moves(int squere, U64 pieces) {
 
 	U64 b_moves = get_bishop_moves(squere, pieces);
@@ -932,7 +937,7 @@ Trap init_masks() {
 	return TRAP_OK;
 
 	}
-
+__attribute__((always_inline))
 static inline U64 occupancy(int index, int bit_in_mask, U64 piece_attack_table) {
 
 	U64 occupancy_bitboard = 0;
@@ -975,21 +980,21 @@ const int rook_relevant[] = {
 // SOMTING LIKE HASH FUNCRION IS ALSO POSIBLE
 /*static inline U16 rand();*/
 #include <stdlib.h>
-
+__attribute__((always_inline))
 static inline U32 rand32() {
 
 	U32 y  = rand() & 0xff;
-	y |= (rand() & 0xFF) << 8;
-	y |= (rand() & 0xFF) << 16;
-	y |= (rand() & 0xFF) << 24;
+	y |= (y & 0xFF) << 8;
+	y |= (y & 0xFF) << 16;
+	y |= (y & 0xFF) << 24;
 	return y;
 
 	}
-
+__attribute__((always_inline))
 static inline U64 rand64() {
 	U64 a = rand32();
 	U64 b = a << 32;
-	a = rand32();
+	a = rand();
 	b |= a;
 	return b;
 	}
@@ -1004,7 +1009,7 @@ static inline U64 magic_candidate() {
 //MAGIC NUMBER INIT
 
 
-
+__attribute__((always_inline))
 U64 find_magic_number(int square, int relevant_bits, int what_piece) {
 	// init occupancies
 	U64 occupancies[4096];
@@ -1309,6 +1314,7 @@ void init_slider_attacks(int bishop) {
 // THIS SECTION USES MAGIC BIT BOARDS TO GENERATE POSIBLE MOVES MUTCH FASTER
 
 // GET BISHOP ATTACK DEPENNDING OFF POSITION OF PIECES
+__attribute__((always_inline))
 static inline U64 get_bishop_moves_magic(int square, U64 occupancy) {
 	// get bishop attacks assuming current board occupancy
 	occupancy &= bishop_mask[square];
