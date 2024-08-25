@@ -72,7 +72,7 @@ typedef enum trap {
 
 #define LOG_COUNT 0
 #define INLINE __attribute__((always_inline))\
-static inline \  
+static inline   
 
 
 //GET NUMBER OF BITS IN BITBOARD
@@ -1593,7 +1593,7 @@ INLINE int check_is_square_attacked_board(int side, int square, Board *bo) {
 
 
 
-INLINE void sort_moves(Board bo, Moves *m) {
+INLINE void sort_moves(Board *bo, Moves *m) {
 		for(int i = 0; i < m->counter; i++) {
 		//IF IS CAPTURE FIRST
 		if(CAPTURE(m->moves[i])) {
@@ -1603,7 +1603,7 @@ INLINE void sort_moves(Board bo, Moves *m) {
 			}
 		/// IF PIECE IS CAPTURED LAST
 
-		if(check_is_square_attacked_board(bo.side,TARGET(m->moves[i]),&bo)
+		if(check_is_square_attacked_board(bo->side,TARGET(m->moves[i]),&bo)
 		    && (PIECE(m->moves[i]) == r ||  PIECE(m->moves[i]) == R
 		        ||  PIECE(m->moves[i]) == Q ||  PIECE(m->moves[i]) == q )) {
 			int temp = m->moves[m->counter - 1];
@@ -1628,16 +1628,95 @@ INLINE void sort_moves(Board bo, Moves *m) {
 //CHANGE BOARD TO BE AS A POINTER
 //#include <omp.h>
 
-INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_quiet) {
+//MAKE HASH MAP STRUCTURE WITCH WILL STORE PREVIUSLY SEARCHED BOARDS
+//IT WILL HAVE 100MB OF MEMORY(SIZE) AND USE ZOBRIST HASH FOR ACCESING BOARD VALUE
+
+#define HASHSIZE 107374180
+//#define HASHSIZE 107374
+//4157458668
+
+typedef struct {
+
+	int   *score;
+	U64   *zob;
+	//Moves *moves;
+	
+} Hashmap;
+
+
+U64 zob_table[64][12];
+
+void init_hashmap(Hashmap *m) {
+
+	m->score = (int*)calloc(HASHSIZE,sizeof(int));
+	m->zob   = (U64*)calloc(HASHSIZE,sizeof(U64));
+	//m->moves = (Moves*)calloc(HASHSIZE, sizeof(Moves));
+	for(size_t j = 0; j < 12; j++)
+		for(size_t i = 0; i < 64; i++) {
+			zob_table[i][j] = rand64();
+			//printf("%lu\n", zob_table[i][j]);
+			}
+	}
+
+INLINE  U64 hash(Board b) {
+	U64 key = 0;
+	for(int i = P; i <= k ; i++) {
+		U64 bitboard = b.piece[i];
+
+		while(bitboard) {
+			int lsb = LSB(bitboard);
+			key ^= zob_table[lsb][i];
+
+			POP(bitboard, lsb);
+			}
+
+
+		}
+
+	//printf("hash %u\n", key % HASHSIZE);
+	//system("pause");
+	return key;
+	}
+
+INLINE void store_position(Hashmap m,Board b, int score) {
+
+	U64 i = hash(b);
+	U64 index = i % HASHSIZE; 
+	m.zob[index] = i;
+	m.score[index] = score;
+	//Moves m;
+	//generate_posible_moves(&b, &m, 1, 1);
+	//memcpy(&m->moves, &m, sizeof(Moves));
+	}
+INLINE int return_score(Hashmap m, Board b, int *is_store) {
+	U64 a = hash(b);
+	U64 index = a % HASHSIZE;
+	if(a == m.zob[index]) {
+		*is_store = 1;
+		}
+	else {
+		*is_store = 0;
+		}
+
+	return m.score[index];
+	}
+
+
+
+
+
+
+INLINE void generate_posible_moves(Board *bo, Moves *m, int is_capture, int is_quiet) {
 
 	static int target, source; // SQUER WITCH MOVE STARTS FROM AND WHER TO GO
 
 	static U64 bitboard, attacks;
+	
 	m->counter = 0;                //RESET COUNTER
 	//white pawn
-	if(bo.side == white) {
+	if(bo->side == white) {
 
-		bitboard = bo.piece[P];
+		bitboard = bo->piece[P];
 		while(bitboard) {
 			//system("pause");
 			source = LSB(bitboard);
@@ -1647,7 +1726,7 @@ INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_qu
 #endif
 			//FORWARD MOVE
 			//IF NOTING IS IN FORWARD SQUARE AND WE ARE NOT OUT OF BOARD
-			if(!(target < 0)  && !GET((bo.position_alll), target)) {
+			if(!(target < 0)  && !GET((bo->position_alll), target)) {
 				//printf("Nesto");
 
 				// GENERATE PROMTION WE AS WHITE CAN PROMOTE PIECES IF THER ARE IN 7 RANK
@@ -1677,7 +1756,7 @@ INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_qu
 					if(is_quiet)
 						m->moves[m->counter++] = ENCODE(source, target,P,0,0,0,0,0);
 					//CHECK IF TWO MOVES FORWARD IS POSIBLE
-					if(source <= h2 && source >= a2 && (!GET((bo.position_alll), (target - 8)))) {
+					if(source <= h2 && source >= a2 && (!GET((bo->position_alll), (target - 8)))) {
 						if(is_quiet)
 							m->moves[m->counter++] = ENCODE(source, (target-8),P,0,0,1,0,0);
 #if LOG_MOVES_PAWN
@@ -1689,7 +1768,7 @@ INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_qu
 					}
 				}
 			// CAPTURES
-			attacks  = white_pawn_attack_table[source] & bo.position_black; // THIS IS CHECK IS THER A PIECE ON ATTACKED SQUERS
+			attacks  = white_pawn_attack_table[source] & bo->position_black; // THIS IS CHECK IS THER A PIECE ON ATTACKED SQUERS
 			//print_bitboard(attacks);
 			while(attacks) {
 				//source alredy init
@@ -1728,8 +1807,8 @@ INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_qu
 				}
 
 			//ENPESANT
-			if(bo.enpesant != -1) {
-				U64 en =  white_pawn_attack_table[source] & (1 << bo.enpesant);
+			if(bo->enpesant != -1) {
+				U64 en =  white_pawn_attack_table[source] & (1 << bo->enpesant);
 				//print_bitboard(en);
 				//system("pause");
 
@@ -1752,11 +1831,11 @@ INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_qu
 
 		//white king
 
-		bitboard = bo.piece[K];
+		bitboard = bo->piece[K];
 		source = LSB(bitboard);
 
 		//CHECK IS CASTLING POSIBLE 0 2 K Q
-		if(castle[0] && !GET(bo.position_alll, f1) && !GET(bo.position_alll, g1)) {
+		if(castle[0] && !GET(bo->position_alll, f1) && !GET(bo->position_alll, g1)) {
 			//MAYBE CHECK IS CHECK BUT IF CHECK ONLY LEGAL MOVES ARE WITH KING
 			if(check_is_square_attacked_board(black,f1, &bo) == 0 && check_is_square_attacked_board(black, g1, &bo) == 0) {
 #if LOG_MOVES_KING
@@ -1771,8 +1850,8 @@ INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_qu
 				}
 			}
 		//QUEAN SIDE CASTLING
-		if(castle[2] && !GET((bo.position_alll), d1)
-		    && !GET(bo.position_alll, c1) && !GET(bo.position_alll, b1)) {
+		if(castle[2] && !GET((bo->position_alll), d1)
+		    && !GET(bo->position_alll, c1) && !GET(bo->position_alll, b1)) {
 			if(check_is_square_attacked_board(black,d1, &bo) == 0
 			    && check_is_square_attacked_board(black,c1, &bo) == 0
 			    && check_is_square_attacked_board(black, b1, &bo) == 0) {
@@ -1790,13 +1869,13 @@ INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_qu
 		while(bitboard) {
 			source = LSB(bitboard);
 			//WHERE IS NO WHITE PIECE
-			attacks = king_attack_table[source] & ~(bo.position_white);
+			attacks = king_attack_table[source] & ~(bo->position_white);
 			//print_bitboard(attacks);
 			while(attacks) {
 
 				target = LSB(attacks);
 				//DISTINGUISH BEATWEN CAPTURE AND NO
-				if(!GET(bo.position_black, target)) {  // NO
+				if(!GET(bo->position_black, target)) {  // NO
 #if LOG_MOVES_KING
 					printf("white king move to %s%s\n",squers_name[source], squers_name[target]);
 #endif
@@ -1831,17 +1910,17 @@ INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_qu
 
 		//white knight
 
-		bitboard = bo.piece[N];
+		bitboard = bo->piece[N];
 		while(bitboard) {
 			source = LSB(bitboard);
 			//WHERE IS NO WHITE PIECE
-			attacks = knight_attack_table[source] & ~(bo.position_white);
+			attacks = knight_attack_table[source] & ~(bo->position_white);
 			//print_bitboard(attacks);
 			while(attacks) {
 
 				target = LSB(attacks);
 				//DISTINGUISH BEATWEN CAPTURE AND NO
-				if(!GET(bo.position_black, target)) {  // NO
+				if(!GET(bo->position_black, target)) {  // NO
 #if LOG_MOVES_KNIGHT
 					printf("white knight move to %s%s\n",squers_name[source], squers_name[target]);
 #endif
@@ -1869,17 +1948,17 @@ INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_qu
 
 		//white bishop
 
-		bitboard = bo.piece[B];
+		bitboard = bo->piece[B];
 		while(bitboard) {
 			source = LSB(bitboard);
 			//GET BISHOPS ATTACKS
-			attacks = get_bishop_moves_magic(source, bo.position_alll) & ~(bo.position_white);
+			attacks = get_bishop_moves_magic(source, bo->position_alll) & ~(bo->position_white);
 			//print_bitboard(attacks);
 			while(attacks) {
 
 				target = LSB(attacks);
 				//DISTINGUISH BEATWEN CAPTURE AND NO
-				if(!GET(bo.position_black, target)) {  // NO
+				if(!GET(bo->position_black, target)) {  // NO
 #if LOG_MOVES_BISHOP
 					printf("white bishop move to %s%s\n",squers_name[source], squers_name[target]);
 #endif
@@ -1908,17 +1987,17 @@ INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_qu
 
 		//white rook
 
-		bitboard = bo.piece[R];
+		bitboard = bo->piece[R];
 		while(bitboard) {
 			source = LSB(bitboard);
 			//GET ROOK ATTACKS
-			attacks = get_rook_moves_magic(source, bo.position_alll) & ~(bo.position_white);
+			attacks = get_rook_moves_magic(source, bo->position_alll) & ~(bo->position_white);
 			//print_bitboard(attacks);
 			while(attacks) {
 
 				target = LSB(attacks);
 				//DISTINGUISH BEATWEN CAPTURE AND NO
-				if(!GET(bo.position_black, target)) {  // NO
+				if(!GET(bo->position_black, target)) {  // NO
 #if LOG_MOVES_ROOK
 					printf("white rook move to %s%s\n",squers_name[source], squers_name[target]);
 #endif
@@ -1947,17 +2026,17 @@ INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_qu
 
 		//white quean
 
-		bitboard = bo.piece[Q];
+		bitboard = bo->piece[Q];
 		while(bitboard) {
 			source = LSB(bitboard);
 			//GET ROOK ATTACKS
-			attacks = get_quean_moves_magic(source, bo.position_alll) & ~(bo.position_white);
+			attacks = get_quean_moves_magic(source, bo->position_alll) & ~(bo->position_white);
 			//print_bitboard(attacks);
 			while(attacks) {
 
 				target = LSB(attacks);
 				//DISTINGUISH BEATWEN CAPTURE AND NO
-				if(!GET(bo.position_black, target)) {  // NO
+				if(!GET(bo->position_black, target)) {  // NO
 #if LOG_MOVES_QUEAN
 					printf("white quean move to %s%s\n",squers_name[source], squers_name[target]);
 #endif
@@ -1987,9 +2066,9 @@ INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_qu
 		}
 
 	//black pawn
-	if(bo.side == black) {
+	if(bo->side == black) {
 
-		bitboard = bo.piece[p];
+		bitboard = bo->piece[p];
 		while(bitboard) {
 
 			source = LSB(bitboard);
@@ -1999,7 +2078,7 @@ INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_qu
 #endif
 			//FORWARD MOVE
 			//IF NOTING IS IN FORWARD SQUARE AND WE ARE NOT OUT OF BOARD
-			if(!(target >= 63)  && !GET((bo.position_alll), target)) {
+			if(!(target >= 63)  && !GET((bo->position_alll), target)) {
 				//printf("Nesto");
 
 				// GENERATE PROMTION WE AS WHITE CAN PROMOTE PIECES IF THER ARE IN 7 RANK
@@ -2032,7 +2111,7 @@ INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_qu
 					if(is_quiet)
 						m->moves[m->counter++] = ENCODE(source, target, p, 0, 0, 0, 0, 0);
 					//CHECK IF TWO MOVES FORWARD IS POSIBLE
-					if(source <= h7 && source >= a7 && (!GET((bo.position_alll), (target + 8)))) {
+					if(source <= h7 && source >= a7 && (!GET((bo->position_alll), (target + 8)))) {
 #if LOG_MOVES_PAWN
 						printf("black pawn moved 2 to %s%s\n",squers_name[source], squers_name[target + 8]);
 #endif
@@ -2044,7 +2123,7 @@ INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_qu
 					}
 				}
 			// CAPTURES
-			attacks  = black_pawn_attack_table[source] & bo.position_white; // THIS IS CHECK IS THER A PIECE ON ATTACKED SQUERS
+			attacks  = black_pawn_attack_table[source] & bo->position_white; // THIS IS CHECK IS THER A PIECE ON ATTACKED SQUERS
 
 			while(attacks) {
 				//source alredy init
@@ -2081,8 +2160,8 @@ INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_qu
 				POP(attacks, target);
 				}
 			//ENPESANT
-			if(bo.enpesant != -1) {
-				U64 en =  black_pawn_attack_table[source] & (1 << bo.enpesant);
+			if(bo->enpesant != -1) {
+				U64 en =  black_pawn_attack_table[source] & (1 << bo->enpesant);
 				//print_bitboard(en);
 				//system("pause");
 
@@ -2103,12 +2182,12 @@ INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_qu
 
 		//black king
 
-		bitboard = bo.piece[k];
+		bitboard = bo->piece[k];
 
 		source = LSB(bitboard);
 
 		//CHECK IS CASTLING POSIBLE 1 3 k q
-		if(castle[1] && !GET(bo.position_alll, f8) && !GET(bo.position_alll, g8)) {
+		if(castle[1] && !GET(bo->position_alll, f8) && !GET(bo->position_alll, g8)) {
 			//MAYBE CHECK IS CHECK BUT IF CHECK ONLY LEGAL MOVES ARE WITH KING
 			if(check_is_square_attacked_board(white,f8, &bo) == 0 && check_is_square_attacked_board(white,g8, &bo) == 0) {
 #if LOG_MOVES_KING
@@ -2123,8 +2202,8 @@ INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_qu
 
 			}
 		//QUEAN SIDE CASTLING
-		if(castle[3] && !GET((bo.position_alll), d8)
-		    && !GET(bo.position_alll, c8) && !GET(bo.position_alll, b8)) {
+		if(castle[3] && !GET((bo->position_alll), d8)
+		    && !GET(bo->position_alll, c8) && !GET(bo->position_alll, b8)) {
 			if(check_is_square_attacked_board(white,d8, &bo) == 0 && check_is_square_attacked_board(white,c8, &bo) == 0
 			    && check_is_square_attacked_board(white,b8, &bo) == 0) { //MAYBE NO B8
 #if LOG_MOVES_KING
@@ -2139,13 +2218,13 @@ INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_qu
 		while(bitboard) {
 			source = LSB(bitboard);
 			//WHERE IS NO WHITE PIECE
-			attacks = king_attack_table[source] & ~(bo.position_black);
+			attacks = king_attack_table[source] & ~(bo->position_black);
 			//print_bitboard(attacks);
 			while(attacks) {
 
 				target = LSB(attacks);
 				//DISTINGUISH BEATWEN CAPTURE AND NO
-				if(!GET(bo.position_white, target)) {  // NO
+				if(!GET(bo->position_white, target)) {  // NO
 #if LOG_MOVES_KING
 					printf("black king move to %s%s\n",squers_name[source], squers_name[target]);
 #endif
@@ -2174,18 +2253,18 @@ INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_qu
 
 		//black knight
 
-		bitboard = bo.piece[n];
+		bitboard = bo->piece[n];
 
 		while(bitboard) {
 			source = LSB(bitboard);
 			//WHERE IS NO WHITE PIECE
-			attacks = knight_attack_table[source] & ~(bo.position_black);
+			attacks = knight_attack_table[source] & ~(bo->position_black);
 			//print_bitboard(attacks);
 			while(attacks) {
 
 				target = LSB(attacks);
 				//DISTINGUISH BEATWEN CAPTURE AND NO
-				if(!GET(bo.position_white, target)) {  // NO
+				if(!GET(bo->position_white, target)) {  // NO
 #if LOG_MOVES_KNIGHT
 					printf("black knight move to %s%s\n",squers_name[source], squers_name[target]);
 #endif
@@ -2215,17 +2294,17 @@ INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_qu
 
 		//black bishop
 
-		bitboard = bo.piece[b];
+		bitboard = bo->piece[b];
 		while(bitboard) {
 			source = LSB(bitboard);
 			//GET BISHOPS ATTACKS
-			attacks = get_bishop_moves_magic(source, bo.position_alll) & ~(bo.position_black);
+			attacks = get_bishop_moves_magic(source, bo->position_alll) & ~(bo->position_black);
 			//print_bitboard(attacks);
 			while(attacks) {
 
 				target = LSB(attacks);
 				//DISTINGUISH BEATWEN CAPTURE AND NO
-				if(!GET(bo.position_white, target)) {  // NO
+				if(!GET(bo->position_white, target)) {  // NO
 #if LOG_MOVES_BISHOP
 					printf("black bishop move to %s%s\n",squers_name[source], squers_name[target]);
 #endif
@@ -2254,17 +2333,17 @@ INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_qu
 
 		//black rook
 
-		bitboard = bo.piece[r];
+		bitboard = bo->piece[r];
 		while(bitboard) {
 			source = LSB(bitboard);
 			//GET ROOK ATTACKS
-			attacks = get_rook_moves_magic(source, bo.position_alll) & ~(bo.position_black);
+			attacks = get_rook_moves_magic(source, bo->position_alll) & ~(bo->position_black);
 			//print_bitboard(attacks);
 			while(attacks) {
 
 				target = LSB(attacks);
 				//DISTINGUISH BEATWEN CAPTURE AND NO
-				if(!GET(bo.position_white, target)) {  // NO
+				if(!GET(bo->position_white, target)) {  // NO
 #if LOG_MOVES_ROOK
 					printf("black rook move to %s%s\n",squers_name[source], squers_name[target]);
 #endif
@@ -2292,17 +2371,17 @@ INLINE void generate_posible_moves(Board bo, Moves *m, int is_capture, int is_qu
 
 		//black quean
 
-		bitboard = bo.piece[q];
+		bitboard = bo->piece[q];
 		while(bitboard) {
 			source = LSB(bitboard);
 			//GET ROOK ATTACKS
-			attacks = get_quean_moves_magic(source, bo.position_alll) & ~(bo.position_black);
+			attacks = get_quean_moves_magic(source, bo->position_alll) & ~(bo->position_black);
 			//print_bitboard(attacks);
 			while(attacks) {
 
 				target = LSB(attacks);
 				//DISTINGUISH BEATWEN CAPTURE AND NO
-				if(!GET(bo.position_white, target)) {  // NO
+				if(!GET(bo->position_white, target)) {  // NO
 #if LOG_MOVES_QUEAN
 					printf("black quean move to %s%s\n",squers_name[source], squers_name[target]);
 #endif
@@ -2679,73 +2758,6 @@ INLINE int min(int minEval,int eval) {
 	}
 
 //
-//MAKE HASH MAP STRUCTURE WITCH WILL STORE PREVIUSLY SEARCHED BOARDS
-//IT WILL HAVE 100MB OF MEMORY(SIZE) AND USE ZOBRIST HASH FOR ACCESING BOARD VALUE
-
-#define HASHSIZE 107374182
-//#define HASHSIZE 1073741
-//4157458668
-
-typedef struct {
-
-	int *score;
-	U64 *zob;
-
-	} Hashmap;
-
-
-U64 zob_table[64][12];
-
-void init_hashmap(Hashmap *m) {
-
-	m->score = (int*)calloc(HASHSIZE,sizeof(int));
-	m->zob =   (U64*)calloc(HASHSIZE,sizeof(U64));
-	for(size_t j = 0; j < 12; j++)
-		for(size_t i = 0; i < 64; i++) {
-			zob_table[i][j] = rand64();
-			//printf("%lu\n", zob_table[i][j]);
-			}
-	}
-
-INLINE  U64 hash(Board b) {
-	U64 key = 0;
-	for(int i = P; i <= k ; i++) {
-		U64 bitboard = b.piece[i];
-
-		while(bitboard) {
-			int lsb = LSB(bitboard);
-			key ^= zob_table[lsb][i];
-
-			POP(bitboard, lsb);
-			}
-
-
-		}
-
-	//printf("hash %u\n", key % HASHSIZE);
-	//system("pause");
-	return key;
-	}
-
-INLINE void store_position(Hashmap m,Board b, int score) {
-
-	U64 i = hash(b);
-	U64 index = i % HASHSIZE; 
-	m.zob[index] = i;
-	m.score[index] = score;
-	}
-INLINE int return_score(Hashmap m, Board b, int *is_store) {
-	U64 a = hash(b);
-	U64 index = a % HASHSIZE;
-	if(a == m.zob[index]) {
-		*is_store = 1;
-		}
-	else {
-		*is_store = 0;
-		}
-
-	return m.score[index];
-	}
 
 
 //NEW
@@ -2922,7 +2934,7 @@ int quiescence(Hashmap hm, Board *board, int alpha, int beta) {
 		alpha = evaluation;
 		}
 
-	generate_posible_moves(temp, &m,1,0);
+	generate_posible_moves(&temp, &m,1,0);
 
 
 	for (int i = 0; i < m.counter; i++) {
@@ -2992,7 +3004,7 @@ int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 	int old_alpha = alpha;
 
 	Moves m;
-	generate_posible_moves(temp, &m,1,1);
+	generate_posible_moves(&temp, &m,1,1);
 
 	for(size_t i = 0; i < m.counter; i++) {
 
@@ -3048,7 +3060,7 @@ int negamax_advanced(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 	int old_alpha = alpha;
 
 	Moves m;
-	generate_posible_moves(temp, &m,1,1);
+	generate_posible_moves(&temp, &m,1,1);
 
 	for(size_t i = 0; i < m.counter; i++) {
 		make_move(board, m.moves[i]);
@@ -3085,10 +3097,10 @@ int negamax_advanced(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 
 
 
-static inline void search_position(Hashmap hm, Board *board,int depth) {
+INLINE void search_position(Hashmap hm, Board *board,int depth) {
 	// find best move within a given position
-	//int score = negamax(hm, board, -inf, inf, depth);
 	int score = negamax(hm, board, -inf, inf, depth);
+	//int score = negamax_advanced(hm, board, -inf, inf, depth);
 	//int score = negamax_advanced(hm, board, -inf, inf, depth);
 	//for(int i = 3; i <= depth; i++ ){
 //			score = negamax(hm, board, score, inf, i);
