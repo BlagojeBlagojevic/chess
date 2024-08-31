@@ -73,7 +73,7 @@ typedef enum trap {
 #define LOG_COUNT 0
 #define INLINE __attribute__((always_inline))\
 static inline   
-
+//#define INLINE static inline
 
 //GET NUMBER OF BITS IN BITBOARD
 INLINE int NUM(U64 bitboard) {
@@ -990,7 +990,7 @@ INLINE U32 rand32() {
 INLINE U64 rand64() {
 	U64 a = rand32();
 	U64 b = a << 32;
-	a = rand();
+	a = rand32();
 	b |= a;
 	return b;
 	}
@@ -1215,7 +1215,7 @@ static U64 bishop_magic_numbers[64] = {
 
 Trap init_magic_numbers() {
 	for (int square = 0; square < 64; square++) {
-		if((rook_magic_numbers[square] = find_magic_number(square, rook_relevant[square], rook)) == TRAP_MAGIC)
+		if((rook_magic_numbers[square] = find_magic_number(square, rook_relevant[square], rook)) == (U64)TRAP_MAGIC)
 			return TRAP_MAGIC;
 		}
 
@@ -1224,7 +1224,7 @@ Trap init_magic_numbers() {
 
 	for (int square = 0; square < 64; square++) {
 
-		if((bishop_magic_numbers[square] = find_magic_number(square, bishop_relevant[square], bishop)) == TRAP_MAGIC) {
+		if((bishop_magic_numbers[square] = find_magic_number(square, bishop_relevant[square], bishop)) == (U64)TRAP_MAGIC) {
 			return TRAP_MAGIC;
 			}
 		}
@@ -1533,8 +1533,8 @@ void print_move(int move) {
 
 	int source_square = SOURCE(move);
 	int target_square = TARGET(move);
-	int piece = PIECE(move);
-	int promoted_piece = PROMOTED(move);
+	//int piece = PIECE(move);
+	//int promoted_piece = PROMOTED(move);
 
 
 	printf("source square: %s\n", squers_name[source_square]);
@@ -1564,7 +1564,7 @@ INLINE int check_is_square_attacked_board(int side, int square, Board *bo) {
 	const U64 position_whitea = bo->position_white;
 	const U64 position_blacka = bo->position_black;
 	const U64 position_alll   = bo->position_white & bo->position_black;
-	const U64 en_pesanta      = bo->enpesant;
+	//const U64 en_pesanta      = bo->enpesant;
 	//int side            = bo->side;
 	//PROBOBLY NO THIS
 	//if(square > 63 && square < 0) {
@@ -1594,21 +1594,25 @@ INLINE int check_is_square_attacked_board(int side, int square, Board *bo) {
 
 
 INLINE void sort_moves(Board *bo, Moves *m) {
-		for(int i = 0; i < m->counter; i++) {
+		for(int i = 1; i < m->counter; i++) {
 		//IF IS CAPTURE FIRST
 		if(CAPTURE(m->moves[i])) {
-			int temp = m->moves[i];
+			int tempa = m->moves[i];
 			m->moves[i] = m->moves[0];
-			m->moves[0] = temp;
+			m->moves[0] = tempa;
 			}
 		/// IF PIECE IS CAPTURED LAST
 
-		if(check_is_square_attacked_board(bo->side,TARGET(m->moves[i]),&bo)
+	//P, N, B, R, Q, K, p, n,  r, b, q, k
+		if(check_is_square_attacked_board(bo->side,TARGET(m->moves[i]),bo)
 		    && (PIECE(m->moves[i]) == r ||  PIECE(m->moves[i]) == R
-		        ||  PIECE(m->moves[i]) == Q ||  PIECE(m->moves[i]) == q )) {
-			int temp = m->moves[m->counter - 1];
-			m->moves[i] = m->moves[m->counter - 1];
-			m->moves[m->counter - 1] = temp;
+		        || PIECE(m->moves[i]) == Q  ||  PIECE(m->moves[i]) == q 
+						|| PIECE(m->moves[i]) == k  || PIECE(m->moves[i]) == K
+						|| PIECE(m->moves[i]) == n  || PIECE(m->moves[i]) == N
+						|| PIECE(m->moves[i]) == b  || PIECE(m->moves[i]) == B)) {
+			int tempa = m->moves[i];
+			m->moves[i] = m->moves[i - 1];
+			m->moves[i - 1] = tempa;
 
 			}
 		}
@@ -1631,7 +1635,9 @@ INLINE void sort_moves(Board *bo, Moves *m) {
 //MAKE HASH MAP STRUCTURE WITCH WILL STORE PREVIUSLY SEARCHED BOARDS
 //IT WILL HAVE 100MB OF MEMORY(SIZE) AND USE ZOBRIST HASH FOR ACCESING BOARD VALUE
 
-#define HASHSIZE 107374180
+//#define HASHSIZE 1073741800
+#define HASHSIZE 107374182
+								 								 
 //#define HASHSIZE 107374
 //4157458668
 
@@ -1657,6 +1663,7 @@ void init_hashmap(Hashmap *m) {
 			//printf("%lu\n", zob_table[i][j]);
 			}
 	}
+//void free_hashmap(Hashmap *m);
 
 INLINE  U64 hash(Board b) {
 	U64 key = 0;
@@ -1664,12 +1671,12 @@ INLINE  U64 hash(Board b) {
 		U64 bitboard = b.piece[i];
 
 		while(bitboard) {
+			
 			int lsb = LSB(bitboard);
 			key ^= zob_table[lsb][i];
-
 			POP(bitboard, lsb);
 			}
-
+	
 
 		}
 
@@ -1690,8 +1697,9 @@ INLINE void store_position(Hashmap m,Board b, int score) {
 	}
 INLINE int return_score(Hashmap m, Board b, int *is_store) {
 	U64 a = hash(b);
-	U64 index = a % HASHSIZE;
-	if(a == m.zob[index]) {
+	U32 index = a % HASHSIZE;
+	//printf("Index %d", index);
+	if(m.zob[index] == a) {
 		*is_store = 1;
 		}
 	else {
@@ -1708,9 +1716,9 @@ INLINE int return_score(Hashmap m, Board b, int *is_store) {
 
 INLINE void generate_posible_moves(Board *bo, Moves *m, int is_capture, int is_quiet) {
 
-	static int target, source; // SQUER WITCH MOVE STARTS FROM AND WHER TO GO
+	int target, source; // SQUER WITCH MOVE STARTS FROM AND WHER TO GO
 
-	static U64 bitboard, attacks;
+	U64 bitboard, attacks;
 	
 	m->counter = 0;                //RESET COUNTER
 	//white pawn
@@ -1837,7 +1845,7 @@ INLINE void generate_posible_moves(Board *bo, Moves *m, int is_capture, int is_q
 		//CHECK IS CASTLING POSIBLE 0 2 K Q
 		if(castle[0] && !GET(bo->position_alll, f1) && !GET(bo->position_alll, g1)) {
 			//MAYBE CHECK IS CHECK BUT IF CHECK ONLY LEGAL MOVES ARE WITH KING
-			if(check_is_square_attacked_board(black,f1, &bo) == 0 && check_is_square_attacked_board(black, g1, &bo) == 0) {
+			if(check_is_square_attacked_board(black,f1, bo) == 0 && check_is_square_attacked_board(black, g1, bo) == 0) {
 #if LOG_MOVES_KING
 				printf("WHITE CASTLE KING\n");
 #endif
@@ -1852,9 +1860,9 @@ INLINE void generate_posible_moves(Board *bo, Moves *m, int is_capture, int is_q
 		//QUEAN SIDE CASTLING
 		if(castle[2] && !GET((bo->position_alll), d1)
 		    && !GET(bo->position_alll, c1) && !GET(bo->position_alll, b1)) {
-			if(check_is_square_attacked_board(black,d1, &bo) == 0
-			    && check_is_square_attacked_board(black,c1, &bo) == 0
-			    && check_is_square_attacked_board(black, b1, &bo) == 0) {
+			if(check_is_square_attacked_board(black,d1, bo) == 0
+			    && check_is_square_attacked_board(black,c1, bo) == 0
+			    && check_is_square_attacked_board(black, b1, bo) == 0) {
 #if LOG_MOVES_KING
 				printf("WHITE CASTLE QUEAN\n");
 #endif
@@ -2189,7 +2197,7 @@ INLINE void generate_posible_moves(Board *bo, Moves *m, int is_capture, int is_q
 		//CHECK IS CASTLING POSIBLE 1 3 k q
 		if(castle[1] && !GET(bo->position_alll, f8) && !GET(bo->position_alll, g8)) {
 			//MAYBE CHECK IS CHECK BUT IF CHECK ONLY LEGAL MOVES ARE WITH KING
-			if(check_is_square_attacked_board(white,f8, &bo) == 0 && check_is_square_attacked_board(white,g8, &bo) == 0) {
+			if(check_is_square_attacked_board(white,f8, bo) == 0 && check_is_square_attacked_board(white,g8, bo) == 0) {
 #if LOG_MOVES_KING
 				printf("BLACK CASTLE KING\n");
 #endif
@@ -2204,8 +2212,8 @@ INLINE void generate_posible_moves(Board *bo, Moves *m, int is_capture, int is_q
 		//QUEAN SIDE CASTLING
 		if(castle[3] && !GET((bo->position_alll), d8)
 		    && !GET(bo->position_alll, c8) && !GET(bo->position_alll, b8)) {
-			if(check_is_square_attacked_board(white,d8, &bo) == 0 && check_is_square_attacked_board(white,c8, &bo) == 0
-			    && check_is_square_attacked_board(white,b8, &bo) == 0) { //MAYBE NO B8
+			if(check_is_square_attacked_board(white,d8, bo) == 0 && check_is_square_attacked_board(white,c8, bo) == 0
+			    && check_is_square_attacked_board(white,b8, bo) == 0) { //MAYBE NO B8
 #if LOG_MOVES_KING
 				printf("BLACK CASTLE QUEAN\n");
 #endif
@@ -2667,7 +2675,7 @@ const int piece_value[] =  {100, 300, 300, 500, 1000, 10000,
 
 #define LOG_EVALUATION 0
 
-#define inf 10000000
+#define inf 1000000000
 int mg_table[6][64] = {{
 		0,   0,   0,   0,   0,   0,  0,   0,
 		98, 134,  61,  95,  68, 126, 34, -11,
@@ -2842,7 +2850,7 @@ const int mirror_score[128] = {
 
 INLINE int evaluate( Board board) {
 
-	int piece, square;
+	int  square;
 	int score = 0;
 	for(int i = P; i <= k; i++) {
 		U64 bitboard =  board.piece[i];
@@ -2904,7 +2912,7 @@ INLINE int evaluate( Board board) {
 
 	//store_position(hm, board, (board.side == white) ? score : -score);
 	return (board.side == white) ? score+rand()%20 : -score-rand()%20;
-
+	//return (board.side == white) ? score : -score;
 	}
 
 //TEMP MUST BE DECLARED
@@ -2919,7 +2927,7 @@ int quiescence(Hashmap hm, Board *board, int alpha, int beta) {
 	Moves m;
 	copy_board();
 
-	int is_store;
+	static int is_store = 0;
 	int sc = return_score(hm, temp, &is_store);
 	if(is_store == 1)
 		return sc;
@@ -2986,16 +2994,9 @@ int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 
 		//int score = quiescence(hm, board, alpha, beta);
 		//store_position(hm, *board, score);
-		//return score;
+		return evaluate(temp);
 		//return quiescence(hm, board, alpha, beta);
-		int is_store;
-		int score = return_score(hm, temp, &is_store);
-		if(is_store == 1)
-			return score;
-		else{
-			score = quiescence(hm, board, alpha, beta);
-			return score;
-		}
+		
 		
 		}
 
@@ -3006,7 +3007,7 @@ int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 	Moves m;
 	generate_posible_moves(&temp, &m,1,1);
 
-	for(size_t i = 0; i < m.counter; i++) {
+	for(int i = 0; i < m.counter; i++) {
 
 		make_move(board, m.moves[i]);
 	
@@ -3062,7 +3063,7 @@ int negamax_advanced(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 	Moves m;
 	generate_posible_moves(&temp, &m,1,1);
 
-	for(size_t i = 0; i < m.counter; i++) {
+	for(int i = 0; i < m.counter; i++) {
 		make_move(board, m.moves[i]);
 		int score;
 		if(CAPTURE(m.moves[i]))
@@ -3103,12 +3104,11 @@ INLINE void search_position(Hashmap hm, Board *board,int depth) {
 	//int score = negamax_advanced(hm, board, -inf, inf, depth);
 	//int score = negamax_advanced(hm, board, -inf, inf, depth);
 	//for(int i = 3; i <= depth; i++ ){
-//			score = negamax(hm, board, score, inf, i);
+			//score = negamax(hm, board, score, inf, i);
 	printf("score is %d\n", score);
 //	}
 
 	}
-
 
 
 
