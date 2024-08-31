@@ -10,7 +10,7 @@
 #include<SDL2/SDL_clipboard.h>
 #include<SDL2/SDL_events.h>
 #include<SDL2/SDL_image.h>
-//#include<SDL2/SDl_timer.h>
+#include<SDL2/SDl_timer.h>
 #include<SDL2/SDL_rwops.h>
 #include<SDL2/SDL_mouse.h>
 //#include<SDL2/SDL_event.h>
@@ -26,7 +26,7 @@
 #define HEIGHT 8 * SQUER_SIZE
 
 #define GREEN  0x00FF0000
-#define WHITE  0x00800020
+#define WHITEE  0x00800020
 #include "generator.h"
 #include "load_pieces.h"
 
@@ -66,7 +66,7 @@ void Draw_Board(SDL_Renderer *renderer) {
 
 void Check_Is_Piece_Is_Dead(Piece *pieces, int X, int Y) {
 
-	for(size_t i = 0; i < NUM_OF_PICES; i++) {
+	for(int i = 0; i < NUM_OF_PICES; i++) {
 		if((int)(pieces[i].position.x / SQUER_SIZE) == X && (int)(pieces[i].position.y / SQUER_SIZE) == Y) {
 
 			if(!pieces[i].is_piece_selected && !pieces[i].is_piece_eaten) {
@@ -91,7 +91,7 @@ void Procss_Mouse_Input(Piece *pieces) {
 	X = X / SQUER_SIZE;
 	Y = Y / SQUER_SIZE;
 	//printf("X =  %d Y = %d\n",X, Y);
-	for(size_t i = 0; i < NUM_OF_PICES; i++) {
+	for(int i = 0; i < NUM_OF_PICES; i++) {
 
 		if(pieces[i].is_piece_selected == TRUE) {
 			//SWITCH TRUE MOVES
@@ -108,11 +108,11 @@ void Procss_Mouse_Input(Piece *pieces) {
 
 
 	//Processes mouse input in regardrs of a piece selection
-	for(size_t i = 0; i < NUM_OF_PICES && check_Piece_Selection; i++) {
+	for(int i = 0; i < NUM_OF_PICES && check_Piece_Selection; i++) {
 		//printf("%d\n",i);
 
 		if((int)(pieces[i].position.x / SQUER_SIZE) == X && (int)(pieces[i].position.y / SQUER_SIZE) == Y && !pieces[i].is_piece_eaten) {
-			for(size_t j = i; j < NUM_OF_PICES; j++) {
+			for(int j = i; j < NUM_OF_PICES; j++) {
 				pieces[j].is_piece_selected  = FALSE;
 				//printf("%d\n", j);
 				}
@@ -127,8 +127,8 @@ void Procss_Mouse_Input(Piece *pieces) {
 
 
 
-
-int main(int argc,char** argv) {
+#undef main
+int main() {
 	SDL_Window *window;
 	SDL_Renderer *renderer;
 	SDL_CreateWindowAndRenderer(WIDTH,HEIGHT,SDL_RENDERER_ACCELERATED,&window,&renderer);
@@ -153,14 +153,14 @@ int main(int argc,char** argv) {
 		}
 
 	Board board;
-	Moves m;
-	m.counter = 0;
+	//Moves m;
+	//m.counter = 0;
 	print_board();
 	//system("pause");
 	srand(time(0));
 	//Piece_Loader(renderer,board,&pieces);
 	init_board_state(&board);
-	Hashmap ma;
+	static Hashmap ma;
 	init_hashmap(&ma);
 
 	while(1) {
@@ -175,7 +175,7 @@ int main(int argc,char** argv) {
 		//generate_posible_moves(board, &m,1,1);
 
 		//int index = index_bestT(board, ma, m);
-		search_position(ma,&board, 6);
+		int score = search_position(ma,&board, 4);
 		//print_move(board.best_move);
 		make_move(&board, board.best_move);
 		//system("pause");
@@ -184,7 +184,7 @@ int main(int argc,char** argv) {
 		SDL_RenderClear(renderer);
 		Draw_Board(renderer);
 		//memset(&pieces,0,sizeof(Piece));
-		size_t num_of_pieces = Piece_Loader(renderer,board,&pieces);
+		size_t num_of_pieces = Piece_Loader(renderer,board,pieces);
 		//system("pause");
 		//system("pause");
 		for(size_t i = 0; i < num_of_pieces; i++) {
@@ -197,13 +197,13 @@ int main(int argc,char** argv) {
 
 		SDL_Delay(1000);
 
-		if(board.piece[k]==0) {
+		if(board.piece[k]==0 || score == inf) {
 
 			printf("White wins!!!\n");
 			//system("pause");
 			break;
 			}
-		if(board.piece[K]==0) {
+		if(board.piece[K]==0 || score == -inf) {
 			printf("Blacks wins!!!\n");
 			//system("pause");
 			break;
