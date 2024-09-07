@@ -160,7 +160,7 @@ int main() {
 	srand(time(0));
 	//Piece_Loader(renderer,board,&pieces);
 	init_board_state(&board);
-	static Hashmap ma;
+	Hashmap ma;
 	init_hashmap(&ma);
 
 	while(1) {
@@ -175,7 +175,7 @@ int main() {
 		//generate_posible_moves(board, &m,1,1);
 
 		//int index = index_bestT(board, ma, m);
-		int score = search_position(ma,&board, 4);
+		int score = search_position(ma, &board, 4);
 		//print_move(board.best_move);
 		make_move(&board, board.best_move);
 		//system("pause");
@@ -197,13 +197,13 @@ int main() {
 
 		SDL_Delay(1000);
 
-		if(board.piece[k]==0 || score == inf) {
+		if(board.piece[k]==0 || (score == inf && board.side == WHITE)) {
 
 			printf("White wins!!!\n");
 			//system("pause");
 			break;
 			}
-		if(board.piece[K]==0 || score == -inf) {
+		if(board.piece[K]==0 || (score == -inf && board.side == BLACK)) {
 			printf("Blacks wins!!!\n");
 			//system("pause");
 			break;
