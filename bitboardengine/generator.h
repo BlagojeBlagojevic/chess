@@ -1,3 +1,4 @@
+
 #include<stdint.h>
 #include <string.h>
 
@@ -72,7 +73,7 @@ typedef enum trap {
 
 #define LOG_COUNT 0
 #define INLINE __attribute__((always_inline))\
-static inline   
+	static inline
 //#define INLINE static inline
 
 //GET NUMBER OF BITS IN BITBOARD
@@ -382,9 +383,9 @@ Trap fen_loader(char start_position[]) {
 		en_pesant = en_pesant;
 		//printf("x %c, y %d",start_position[i] - 'a' + 'a', (8 -  (start_position[i+1] - '0')));
 		}
-	else{
+	else {
 		en_pesant = -1;
-	}
+		}
 
 	return TRAP_OK;
 	}
@@ -1356,7 +1357,7 @@ static inline U64 get_quean_moves_magic(int squere, U64 pieces) {
 __attribute__((always_inline))
 static inline int check_is_square_attacked(int side, int square) {
 
-	
+
 
 
 	if((side == white) && (black_pawn_attack_table[square] & white_pawn)) return 1;
@@ -1453,6 +1454,7 @@ int print_is_square_attacked(int side, int square) {
 typedef struct {
 
 	int moves[256];
+	int value[256];
 	int counter;
 	} Moves;
 
@@ -1594,7 +1596,7 @@ INLINE int check_is_square_attacked_board(int side, int square, Board *bo) {
 
 
 INLINE void sort_moves(Board *bo, Moves *m) {
-		for(int i = 1; i < m->counter; i++) {
+	for(int i = 1; i < m->counter; i++) {
 		//IF IS CAPTURE FIRST
 		if(CAPTURE(m->moves[i])) {
 			int tempa = m->moves[i];
@@ -1603,13 +1605,13 @@ INLINE void sort_moves(Board *bo, Moves *m) {
 			}
 		/// IF PIECE IS CAPTURED LAST
 
-	//P, N, B, R, Q, K, p, n,  r, b, q, k
+		//P, N, B, R, Q, K, p, n,  r, b, q, k
 		if(check_is_square_attacked_board(bo->side,TARGET(m->moves[i]),bo)
 		    && (PIECE(m->moves[i]) == r ||  PIECE(m->moves[i]) == R
-		        || PIECE(m->moves[i]) == Q  ||  PIECE(m->moves[i]) == q 
-						|| PIECE(m->moves[i]) == k  || PIECE(m->moves[i]) == K
-						|| PIECE(m->moves[i]) == n  || PIECE(m->moves[i]) == N
-						|| PIECE(m->moves[i]) == b  || PIECE(m->moves[i]) == B)) {
+		        || PIECE(m->moves[i]) == Q  ||  PIECE(m->moves[i]) == q
+		        || PIECE(m->moves[i]) == k  || PIECE(m->moves[i]) == K
+		        || PIECE(m->moves[i]) == n  || PIECE(m->moves[i]) == N
+		        || PIECE(m->moves[i]) == b  || PIECE(m->moves[i]) == B)) {
 			int tempa = m->moves[i];
 			m->moves[i] = m->moves[i - 1];
 			m->moves[i - 1] = tempa;
@@ -1618,6 +1620,68 @@ INLINE void sort_moves(Board *bo, Moves *m) {
 		}
 	}
 //}
+//RATE THE MOVES WE WILL PICE VALUE
+static inline void rate_moves(Board *bo, Moves *m) {
+	for(int i = 0; i < m->counter; i++) {
+		//IF MOVE CAPTURE
+		//GET PIECE ON SQUARE
+
+		int start_piece, stop_piece;
+		int target = TARGET(m->moves[i]);
+		int _piece    = PIECE(m->moves[i]);
+		if(bo->side == WHITE) {
+			start_piece = P;
+			stop_piece  = K;
+			}
+		else {
+			start_piece = p;
+			stop_piece  = k;
+			}
+		//IF CAPTURE
+		if(CAPTURE(m->moves[i])) {
+
+			//LOOP OVER ALL IF PIECE IS GRATER++ ELSE--
+			for(int j = start_piece; j <= stop_piece; j++) {
+				if(GET(bo->piece[j], target)) {
+					m->value[i] = j - _piece;
+					}
+				}
+			}
+		//IF QUIET
+		else {
+			m->value[i] = _piece;
+			if(start_piece == P){
+				if(check_is_square_attacked_board(WHITE, target, bo)){
+					m->value[i]-=4;
+				}	
+			}
+			else{
+					if(check_is_square_attacked_board(WHITE, target, bo)){
+					 m->value[i]= _piece - 4;
+				}	
+			}
+			}
+
+		}
+	}
+INLINE void sort_moves1(Board *bo, Moves *m) {
+	rate_moves(bo, m);
+
+	for(int i = 0; i < m->counter; i++) {
+		for(int j = i + 1; j < m->counter; j++) {
+			if(m->value[j] > m->value[i]) {
+				int tempa = m->moves[i];
+				m->moves[i] = m->moves[j];
+				m->moves[j] = tempa;
+				int tempa_value = m->value[i];
+				m->value[i] = m->value[j];
+				m->value[i] = tempa_value;
+
+				}
+			}
+		}
+	}
+
 
 //GENERATE MOVES MAIN FUNCTION WITCH GENERATES MOVES
 //ACORDING TO CHESS PROGRAMING WIKI MAX AMOUNT OF MOVES IS 218
@@ -1637,7 +1701,7 @@ INLINE void sort_moves(Board *bo, Moves *m) {
 
 //#define HASHSIZE 1073741800
 #define HASHSIZE 107374182
-								 								 
+
 //#define HASHSIZE 107374
 //4157458668
 
@@ -1646,8 +1710,8 @@ typedef struct {
 	int   *score;
 	U64   *zob;
 	//Moves *moves;
-	
-} Hashmap;
+
+	} Hashmap;
 
 
 U64 zob_table[64][12];
@@ -1671,12 +1735,12 @@ INLINE  U64 hash(Board b) {
 		U64 bitboard = b.piece[i];
 
 		while(bitboard) {
-			
+
 			int lsb = LSB(bitboard);
 			key ^= zob_table[lsb][i];
 			POP(bitboard, lsb);
 			}
-	
+
 
 		}
 
@@ -1688,7 +1752,7 @@ INLINE  U64 hash(Board b) {
 INLINE void store_position(Hashmap m,Board b, int score) {
 
 	U64 i = hash(b);
-	U64 index = i % HASHSIZE; 
+	U64 index = i % HASHSIZE;
 	m.zob[index] = i;
 	m.score[index] = score;
 	//Moves m;
@@ -1716,15 +1780,17 @@ INLINE int return_score(Hashmap m, Board b, int *is_store) {
 
 INLINE void generate_posible_moves(Board *bo, Moves *m, int is_capture, int is_quiet) {
 
-	int target, source; // SQUER WITCH MOVE STARTS FROM AND WHER TO GO
+	static int target, source; // SQUER WITCH MOVE STARTS FROM AND WHER TO GO
 
-	U64 bitboard, attacks;
-	
+	static U64 bitboard, attacks;
+
 	m->counter = 0;                //RESET COUNTER
 	//white pawn
+
 	if(bo->side == white) {
 
 		bitboard = bo->piece[P];
+
 		while(bitboard) {
 			//system("pause");
 			source = LSB(bitboard);
@@ -2072,6 +2138,8 @@ INLINE void generate_posible_moves(Board *bo, Moves *m, int is_capture, int is_q
 
 
 		}
+//++++++++++++++++++++++++++++++++BLACK PIECES++++++++++++++++++++++++++++++++
+
 
 	//black pawn
 	if(bo->side == black) {
@@ -2416,12 +2484,13 @@ INLINE void generate_posible_moves(Board *bo, Moves *m, int is_capture, int is_q
 
 
 	///* //ORDER OF MOVES FOR SEARCH
-	sort_moves(bo, m);
-
+	//sort_moves(bo, m);
+	sort_moves1(bo, m);
 	//*/
 
 
 	}
+
 
 
 const char promoted_pieces[] = {
@@ -2669,9 +2738,6 @@ static inline void make_move(Board *board, int move) {
 	//return TRAP_MOVE_OK;
 	}
 //enum { P, N, B, R, Q, K, p, n,  r, b, q, k };
-const int piece_value[] =  {100, 300, 300, 500, 1000, 10000,
-                            100, 300, 300, 500, 1000, 10000
-                           };
 
 #define LOG_EVALUATION 0
 
@@ -2858,10 +2924,10 @@ INLINE int evaluate( Board board) {
 			square = LSB(bitboard);
 			if (check_is_square_attacked(WHITE, square))
 				score+=4;
-			if(check_is_square_attacked(BLACK, square)){
+			if(check_is_square_attacked(BLACK, square)) {
 				score-=4;
-			}
-			
+				}
+
 			score += evaluation_piece[i];
 			switch(i) {
 				case P:
@@ -2916,7 +2982,7 @@ INLINE int evaluate( Board board) {
 		score+=inf;
 
 //	for(Squeres square = a8; square <=h1; sqaare++ ){
-		
+
 //	}
 
 
@@ -2932,16 +2998,16 @@ INLINE int evaluate( Board board) {
 
 
 int quiescence(Hashmap hm, Board *board, int alpha, int beta) {
-		
+
 	Board temp;
 	Moves m;
 	copy_board();
-	
-
-	
 
 
-	
+
+
+
+
 
 	int evaluation = evaluate(temp);
 	if (evaluation >= beta) {
@@ -2958,39 +3024,33 @@ int quiescence(Hashmap hm, Board *board, int alpha, int beta) {
 
 	for (int i = 0; i < m.counter; i++) {
 
+		if(1) {
 
-		board->ply++;
-		make_move(board,m.moves[i]);
-		int score = -quiescence(hm, board, -beta, -alpha);
-		//store_position(hm, temp, score);
-		board->ply--;
 
-		if (score >= beta) {
-			store_position(hm, temp, beta);
-			return beta;
+			board->ply++;
+			make_move(board,m.moves[i]);
+			int score = -quiescence(hm, board, -beta, -alpha);
+
+			//store_position(hm, temp, score);
+			board->ply--;
+
+			if (score >= beta) {
+				store_position(hm, temp, beta);
+				return beta;
+				}
+			take_board();
+			if (score > alpha) {
+				alpha = score;
+
+				}
 			}
-		take_board();
-		if (score > alpha) {
-			alpha = score;
-
-			}
+		//copy_
+		store_position(hm, temp, alpha);
+		//else
+			return alpha;
 		}
-	//copy_
-	store_position(hm, *board, alpha);
-	return alpha;
+		return alpha;
 	}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
@@ -3003,25 +3063,25 @@ int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 		//return evaluate(hm, temp);
 
 //		else
-//			int is_store = 0;
-//		int sc = return_score(hm, temp, &is_store);
-	//		if(is_store == 1)
-		//		return sc;
+			int is_store = 0;
+		int sc = return_score(hm, temp, &is_store);
+				if(is_store == 1)
+				return sc;
 
 
-	//	int score = quiescence(hm, board, alpha, beta);
+		//	int score = quiescence(hm, board, alpha, beta);
 		//store_position(hm, *board, score);
 		//int is_store = 0;
 		//int sc = return_score(hm, temp, &is_store);
 		//if(is_store == 1)
 		//	return sc;
-		int score = evaluate(temp);
+		//int score = evaluate(temp);
 		//store_position(hm, *board, score);
-		
-		return score;
-		//return quiescence(hm, board, alpha, beta);
-		
-		
+
+		//return score;
+		return quiescence(hm, board, alpha, beta);
+
+
 		}
 
 
@@ -3034,12 +3094,15 @@ int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 	for(int i = 0; i < m.counter; i++) {
 
 		make_move(board, m.moves[i]);
-	
-		int score = -negamax(hm, board, -beta, -alpha, depth - 1);
+		
+		//if(PIECE(m.moves[i]) )
+		int score;
+		score = -negamax(hm, board, -beta  , -alpha  , depth - 1);
+		
 		board->ply--;
 		take_board();
 		if (score >= beta) {
-		//	store_position(hm, *board, beta);
+			//	store_position(hm, *board, beta);
 			return beta;
 			}
 
@@ -3126,7 +3189,7 @@ INLINE int search_position(Hashmap hm, Board *board,int depth) {
 	// find best move within a given position
 	int score;
 	if(NUM(board->position_alll) > 12 )
-		score = negamax(hm, board, -inf / 2, inf / 2, depth);
+		score = negamax(hm, board, -inf, inf, depth);
 	else if(NUM(board->position_alll) <=12 && NUM(board->position_alll) >= 8)
 		score = negamax(hm, board, -inf, inf, 6);
 	else
@@ -3134,7 +3197,7 @@ INLINE int search_position(Hashmap hm, Board *board,int depth) {
 	//int score = negamax_advanced(hm, board, -inf, inf, depth);
 	//int score = negamax_advanced(hm, board, -inf, inf, depth);
 	//for(int i = 3; i <= depth; i++ ){
-			//score = negamax(hm, board, score, inf, i);
+	//score = negamax(hm, board, score, inf, i);
 	printf("score is %d\n", score);
 //	}
 	return score;
