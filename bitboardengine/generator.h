@@ -979,7 +979,7 @@ const int rook_relevant[] = {
 // SOMTING LIKE HASH FUNCRION IS ALSO POSIBLE
 /*static inline U16 rand();*/
 #include <stdlib.h>
-INLINE U32 rand32() {
+/*INLINE U32 rand32() {
 
 	U32 y  = rand() & 0xff;
 	y |= (y & 0xFF) << 8;
@@ -987,7 +987,12 @@ INLINE U32 rand32() {
 	y |= (y & 0xFF) << 24;
 	return y;
 
-	}
+	}*/
+INLINE U32 rand32(){
+	U32 y = rand() & 0xFF;
+	y = (y << 16) | rand();
+	return y;
+}
 INLINE U64 rand64() {
 	U64 a = rand32();
 	U64 b = a << 32;
@@ -1650,16 +1655,16 @@ static inline void rate_moves(Board *bo, Moves *m) {
 		//IF QUIET
 		else {
 			m->value[i] = _piece;
-			if(start_piece == P){
-				if(check_is_square_attacked_board(WHITE, target, bo)){
+			if(start_piece == P) {
+				if(check_is_square_attacked_board(WHITE, target, bo)) {
 					m->value[i]-=4;
-				}	
-			}
-			else{
-					if(check_is_square_attacked_board(WHITE, target, bo)){
-					 m->value[i]= _piece - 4;
-				}	
-			}
+					}
+				}
+			else {
+				if(check_is_square_attacked_board(WHITE, target, bo)) {
+					m->value[i]= _piece - 4;
+					}
+				}
 			}
 
 		}
@@ -2892,14 +2897,14 @@ const int rook_score[64] = {
 
 // king positional score
 const int king_score[64] = {
-	0,   0,   0,   0,   0,   0,   0,   0,
-	0,   0,   5,   5,   5,   5,   0,   0,
-	0,   5,   5,  10,  10,   5,   5,   0,
-	0,   5,  10,  20,  20,  10,   5,   0,
-	0,   5,  10,  20,  20,  10,   5,   0,
-	0,   0,   5,  10,  10,   5,   0,   0,
-	0,   5,   5,  -5,  -5,   0,   5,   0,
-	0,   0,   40,   0, -15,   0,  50,   0
+	0,   0,     0,    0,    0,    0,    0,   0,
+	0,   0,    -5,   -5,   -5,   -5,    0,   0,
+	0,   -5,   -5,  -10,  -10,   -5,  -5,   0,
+	0,   -5,  -10,  -20,  -20,   -10, -5,   0,
+	0,   -5,  -10,  -20,  -20,   -10, -5,   0,
+	0,   0,    -5,  -10,   -10,   -5,   0,   0,
+	0,   -5,   -5,  -5,   -5,     0,  -5,   0,
+	0,    0,    40,   0,  -15,    0,  50,   0
 	};
 
 // mirror positional score tables for opposite side
@@ -2923,9 +2928,9 @@ INLINE int evaluate( Board board) {
 		while(bitboard) {
 			square = LSB(bitboard);
 			if (check_is_square_attacked(WHITE, square))
-				score+=1;
+				score+=4;
 			if(check_is_square_attacked(BLACK, square)) {
-				score-=1;
+				score-=4;
 				}
 
 			score += evaluation_piece[i];
@@ -2987,8 +2992,8 @@ INLINE int evaluate( Board board) {
 
 
 	//store_position(hm, board, (board.side == white) ? score : -score);
-	return (board.side == white) ? score+rand()%20 : -score-rand()%20;
-	//return (board.side == white) ? score : -score;
+//	return (board.side == white) ? score+rand()%20 : -score-rand()%20;
+	return (board.side == white) ? score : -score;
 	}
 
 //TEMP MUST BE DECLARED
@@ -3047,9 +3052,9 @@ int quiescence(Hashmap hm, Board *board, int alpha, int beta) {
 		//copy_
 		store_position(hm, temp, alpha);
 		//else
-			return alpha;
-		}
 		return alpha;
+		}
+	return alpha;
 	}
 
 
@@ -3063,10 +3068,10 @@ int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 		//return evaluate(hm, temp);
 
 //		else
-			int is_store = 0;
+		int is_store = 0;
 		int sc = return_score(hm, temp, &is_store);
-				if(is_store == 1)
-				return sc;
+		if(is_store == 1)
+			return sc;
 
 
 		//	int score = quiescence(hm, board, alpha, beta);
@@ -3091,20 +3096,20 @@ int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 	Moves m;
 	generate_posible_moves(&temp, &m,1,1);
 
-	
+
 
 	for(int i = 0; i < m.counter; i++) {
 
 		make_move(board, m.moves[i]);
-		
+
 		//if(PIECE(m.moves[i]) )
 		int score;
-		score = -negamax(hm, board, -beta  , -alpha  , depth - 1);
-		
+		score = -negamax(hm, board, -beta, -alpha, depth - 1);
+
 		board->ply--;
 		take_board();
 		if (score >= beta) {
-				store_position(hm, temp, beta);
+			store_position(hm, temp, beta);
 			return beta;
 			}
 
@@ -3204,7 +3209,6 @@ INLINE int search_position(Hashmap hm, Board *board,int depth) {
 //	}
 	return score;
 	}
-
 
 
 
