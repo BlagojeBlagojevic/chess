@@ -2923,9 +2923,9 @@ INLINE int evaluate( Board board) {
 		while(bitboard) {
 			square = LSB(bitboard);
 			if (check_is_square_attacked(WHITE, square))
-				score+=4;
+				score+=1;
 			if(check_is_square_attacked(BLACK, square)) {
-				score-=4;
+				score-=1;
 				}
 
 			score += evaluation_piece[i];
@@ -3091,6 +3091,8 @@ int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 	Moves m;
 	generate_posible_moves(&temp, &m,1,1);
 
+	
+
 	for(int i = 0; i < m.counter; i++) {
 
 		make_move(board, m.moves[i]);
@@ -3102,7 +3104,7 @@ int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 		board->ply--;
 		take_board();
 		if (score >= beta) {
-			//	store_position(hm, *board, beta);
+				store_position(hm, temp, beta);
 			return beta;
 			}
 
@@ -3117,7 +3119,7 @@ int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 	if (old_alpha != alpha)
 		board->best_move = best_sofar;
 
-	//store_position(hm, *board, beta);
+	store_position(hm, temp, alpha);
 	return alpha;
 
 
@@ -3202,7 +3204,6 @@ INLINE int search_position(Hashmap hm, Board *board,int depth) {
 //	}
 	return score;
 	}
-
 
 
 
