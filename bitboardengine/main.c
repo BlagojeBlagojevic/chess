@@ -10,7 +10,7 @@
 #include<SDL2/SDL_clipboard.h>
 #include<SDL2/SDL_events.h>
 #include<SDL2/SDL_image.h>
-//#include<SDL2/SDl_timer.h>
+#include<SDL2/SDl_timer.h>
 #include<SDL2/SDL_rwops.h>
 #include<SDL2/SDL_mouse.h>
 //#include<SDL2/SDL_event.h>
@@ -25,8 +25,9 @@
 #define WIDTH  8 * SQUER_SIZE
 #define HEIGHT 8 * SQUER_SIZE
 
-#define GREEN  0x00FF0000
+#define GREEN   0x00FF0000
 #define WHITEE  0x00800020
+#define NNUE
 #include "generator.h"
 #include "load_pieces.h"
 
@@ -151,7 +152,9 @@ int main() {
 		printf("FEN ERROR !!!\n");
 		return -1;
 		}
-
+	//init_nnue("nn-eba324f53044.nnue");
+	init_nnue("main.nnue");
+	//exit(-1);
 	Board board;
 	//Moves m;
 	//m.counter = 0;
@@ -160,7 +163,7 @@ int main() {
 	srand(time(0));
 	//Piece_Loader(renderer,board,&pieces);
 	init_board_state(&board);
-	Hashmap ma;
+	static Hashmap ma;
 	init_hashmap(&ma);
 
 	while(1) {
