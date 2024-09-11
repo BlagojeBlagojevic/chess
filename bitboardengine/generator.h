@@ -1,6 +1,10 @@
 
 #include<stdint.h>
 #include <string.h>
+#ifdef NNUE
+#include "nnue_eval.h"
+#endif
+//#include "nnue_eval.c"
 
 //MACRO USED FOR ARRAY SIZE
 #define SIZE(x) sizeof(x) / sizeof(x[0])
@@ -11,7 +15,7 @@
 typedef uint64_t U64;
 typedef uint32_t U32;
 enum {bishop, rook, knight, king, quean, pawn};        // REPRESENT PIECES
-enum {white, black};  														// REPRESENT PIECES   COLORS
+enum {white = 0, black = 1};  														// REPRESENT PIECES   COLORS
 enum { P, N, B, R, Q, K, p, n,  r, b, q, k };
 //SQUERS REPRESENTATION
 typedef enum {
@@ -988,11 +992,11 @@ const int rook_relevant[] = {
 	return y;
 
 	}*/
-INLINE U32 rand32(){
+INLINE U32 rand32() {
 	U32 y = rand() & 0xFF;
 	y = (y << 16) | rand();
 	return y;
-}
+	}
 INLINE U64 rand64() {
 	U64 a = rand32();
 	U64 b = a << 32;
@@ -1680,7 +1684,7 @@ INLINE void sort_moves1(Board *bo, Moves *m) {
 				m->moves[j] = tempa;
 				int tempa_value = m->value[i];
 				m->value[i] = m->value[j];
-				m->value[i] = tempa_value;
+				m->value[j] = tempa_value;
 
 				}
 			}
@@ -3000,9 +3004,120 @@ INLINE int evaluate( Board board) {
 #define copy_board() memcpy(&temp,  board, sizeof(Board))
 #define take_board() memcpy(board, &temp, sizeof(Board))
 
+/**
+* Evaluation subroutine suitable for chess engines.
+* -------------------------------------------------
+* Piece codes are
+*     wking=1, wqueen=2, wrook=3, wbishop= 4, wknight= 5, wpawn= 6,
+*     bking=7, bqueen=8, brook=9, bbishop=10, bknight=11, bpawn=12,
+* Square are
+*     A1=0, B1=1 ... H8=63
+* Input format:
+*     piece[0] is white king, square[0] is its location
+*     piece[1] is black king, square[1] is its location
+*     ..
+*     piece[x], square[x] can be in any order
+*     ..
+*     piece[n+1] is set to 0 to represent end of array
+*/
+
+#ifdef NNUE
+INLINE int evaluate_nn(Board *bo) {
+
+	int pieces[33];
+	int squares[33];
+	const int wking=1, wqueen=2, wrook=3, wbishop= 4, wknight= 5, wpawn= 6;
+	const int bking=7, bqueen=8, brook=9, bbishop=10, bknight=11, bpawn=12;
+	int counter = 0;
+	int square, score = 0;
+	for(int i = P; i <= k; i++) {
+		U64 bitboard =  bo->piece[i];
+		while(bitboard) {
+			square = LSB(bitboard);
+			if (check_is_square_attacked_board(WHITE, square, bo))
+				score+=0;
+			if(check_is_square_attacked_board(BLACK, square, bo)) {
+				score-=0;
+				}
+			//int squarea = mirror_score[square];
+			int squarea = mirror_score[square];
+			switch(i) {
+				case P:
+					pieces[counter] = wpawn;
+					squares[counter] = squarea;
+					break;
+				case N:
+					pieces[counter] = wknight;
+					squares[counter] = squarea;
+					break;
+				case B:
+					pieces[counter] = wbishop;
+					squares[counter] = squarea;
+					break;
+				case R:
+					pieces[counter] = wrook;
+					squares[counter] = squarea;
+					break;
+				case Q:
+					pieces[counter] = wqueen;
+					squares[counter] = squarea;
+					break;
+				case K:
+					pieces[0] = wking;
+					squares[0] = squarea;
+					counter--;
+					break;
+
+				case p:
+					pieces[counter] = bpawn;
+					squares[counter] = squarea;
+					break;
+				case n:
+					pieces[counter] = bknight;
+					squares[counter] = squarea;
+					break;
+				case b:
+					pieces[counter] = bbishop;
+					squares[counter] = squarea;
+					break;
+				case r:
+					pieces[counter] = brook;
+					squares[counter] = squarea;
+					break;
+				case q:
+					pieces[counter] = bqueen;
+					squares[counter] = squarea;
+					break;
+				case k:
+					pieces[1] = bking;
+					squares[1] = squarea;
+					counter--;
+					break;
+
+				}
+			counter++;
+			POP(bitboard, square);
+			}
 
 
-int quiescence(Hashmap hm, Board *board, int alpha, int beta) {
+		}
+
+	pieces[counter]  = 0;
+	squares[counter] = 0;
+	score  += evaluate_nnue(bo->side, pieces, squares);
+	if((bo->side == white) && (bo->piece[K] == 0))
+		return (bo->side == white) ? -inf : inf;
+
+	if((bo->side == black) && (bo->piece[k] == 0))
+		return (bo->side == white) ? inf : -inf;
+
+	//return (bo->side == white) ? score : -score;
+	return score + rand()%10 - 5;
+
+	}
+#endif
+
+static int quiescence(Hashmap hm, Board *board, int alpha, int beta) {
 
 	Board temp;
 	Moves m;
@@ -3014,7 +3129,13 @@ int quiescence(Hashmap hm, Board *board, int alpha, int beta) {
 
 
 
+	//int evaluation = evaluate(temp);
+	#ifdef NNUE
+	int evaluation = evaluate_nn(board);
+	#endif
+	#ifndef NNUE
 	int evaluation = evaluate(temp);
+	#endif
 	if (evaluation >= beta) {
 		store_position(hm, temp, beta);
 		return beta;
@@ -3058,7 +3179,7 @@ int quiescence(Hashmap hm, Board *board, int alpha, int beta) {
 	}
 
 
-int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
+static int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 	board->ply = 0;
 	Board temp;
 	copy_board();
@@ -3082,7 +3203,7 @@ int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 		//	return sc;
 		//int score = evaluate(temp);
 		//store_position(hm, *board, score);
-
+		//int score = evaluate_nn(board)
 		//return score;
 		return quiescence(hm, board, alpha, beta);
 
@@ -3109,7 +3230,7 @@ int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 		board->ply--;
 		take_board();
 		if (score >= beta) {
-			store_position(hm, temp, beta);
+		//	store_position(hm, temp, beta);
 			return beta;
 			}
 
@@ -3124,7 +3245,7 @@ int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 	if (old_alpha != alpha)
 		board->best_move = best_sofar;
 
-	store_position(hm, temp, alpha);
+	//store_position(hm, temp, alpha);
 	return alpha;
 
 
