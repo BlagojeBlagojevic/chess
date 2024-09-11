@@ -27,7 +27,7 @@
 
 #define GREEN   0x00FF0000
 #define WHITEE  0x00800020
-#define NNUE
+//#define NNUE
 #include "generator.h"
 #include "load_pieces.h"
 
@@ -152,8 +152,11 @@ int main() {
 		printf("FEN ERROR !!!\n");
 		return -1;
 		}
+	
 	//init_nnue("nn-eba324f53044.nnue");
+	#ifdef NNUE
 	init_nnue("main.nnue");
+	#endif
 	//exit(-1);
 	Board board;
 	//Moves m;
