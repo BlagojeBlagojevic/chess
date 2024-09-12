@@ -10,7 +10,7 @@
 #include<SDL2/SDL_clipboard.h>
 #include<SDL2/SDL_events.h>
 #include<SDL2/SDL_image.h>
-#include<SDL2/SDl_timer.h>
+//#include<SDL2/SDl_timer.h>
 #include<SDL2/SDL_rwops.h>
 #include<SDL2/SDL_mouse.h>
 //#include<SDL2/SDL_event.h>
@@ -27,7 +27,7 @@
 
 #define GREEN   0x00FF0000
 #define WHITEE  0x00800020
-//#define NNUE
+#define NNUE
 #include "generator.h"
 #include "load_pieces.h"
 
@@ -152,13 +152,14 @@ int main() {
 		printf("FEN ERROR !!!\n");
 		return -1;
 		}
-	
-	//init_nnue("nn-eba324f53044.nnue");
-	#ifdef NNUE
+
+
+#ifdef NNUE
+	//init_nnue("2.nnue");
 	init_nnue("main.nnue");
-	#endif
+#endif
 	//exit(-1);
-	Board board;
+	static Board board;
 	//Moves m;
 	//m.counter = 0;
 	print_board();
