@@ -1630,11 +1630,11 @@ INLINE void sort_moves(Board *bo, Moves *m) {
 	}
 //}
 //RATE THE MOVES WE WILL PICE VALUE
-static inline void rate_moves(Board *bo, Moves *m) {
+INLINE void rate_moves(Board *bo, Moves *m) {
 	for(int i = 0; i < m->counter; i++) {
 		//IF MOVE CAPTURE
 		//GET PIECE ON SQUARE
-
+		m->value[i] = 0;
 		int start_piece, stop_piece;
 		int target = TARGET(m->moves[i]);
 		int _piece    = PIECE(m->moves[i]);
@@ -1673,6 +1673,8 @@ static inline void rate_moves(Board *bo, Moves *m) {
 
 		}
 	}
+	
+
 INLINE void sort_moves1(Board *bo, Moves *m) {
 	rate_moves(bo, m);
 
@@ -3024,21 +3026,24 @@ INLINE int evaluate( Board board) {
 #ifdef NNUE
 INLINE int evaluate_nn(Board *bo) {
 
-	int pieces[33];
-	int squares[33];
+	static int pieces[33];
+	static int squares[33];
+	
 	const int wking=1, wqueen=2, wrook=3, wbishop= 4, wknight= 5, wpawn= 6;
 	const int bking=7, bqueen=8, brook=9, bbishop=10, bknight=11, bpawn=12;
-	int counter = 0;
+	int counter = 2;
 	int square, score = 0;
+	pieces[0]  = wking;
+	squares[0] = 	mirror_score[LSB(bo->piece[K])];
+	pieces[1]  = bking;
+	squares[1] = 	mirror_score[LSB(bo->piece[k])];
+
+
 	for(int i = P; i <= k; i++) {
 		U64 bitboard =  bo->piece[i];
 		while(bitboard) {
 			square = LSB(bitboard);
-			if (check_is_square_attacked_board(WHITE, square, bo))
-				score+=0;
-			if(check_is_square_attacked_board(BLACK, square, bo)) {
-				score-=0;
-				}
+
 			//int squarea = mirror_score[square];
 			int squarea = mirror_score[square];
 			switch(i) {
@@ -3062,11 +3067,7 @@ INLINE int evaluate_nn(Board *bo) {
 					pieces[counter] = wqueen;
 					squares[counter] = squarea;
 					break;
-				case K:
-					pieces[0] = wking;
-					squares[0] = squarea;
-					counter--;
-					break;
+
 
 				case p:
 					pieces[counter] = bpawn;
@@ -3088,12 +3089,10 @@ INLINE int evaluate_nn(Board *bo) {
 					pieces[counter] = bqueen;
 					squares[counter] = squarea;
 					break;
-				case k:
-					pieces[1] = bking;
-					squares[1] = squarea;
+
+				default:
 					counter--;
 					break;
-
 				}
 			counter++;
 			POP(bitboard, square);
@@ -3106,14 +3105,16 @@ INLINE int evaluate_nn(Board *bo) {
 	squares[counter] = 0;
 	score  += evaluate_nnue(bo->side, pieces, squares);
 	if((bo->side == white) && (bo->piece[K] == 0))
-		return (bo->side == white) ? -inf : inf;
+		score = -inf;
+
 
 	if((bo->side == black) && (bo->piece[k] == 0))
-		return (bo->side == white) ? inf : -inf;
+		score = inf;
+	//	return (bo->side == white) ? inf : -inf;
 
 	//return (bo->side == white) ? score : -score;
-	return score + rand()%10 - 5;
-
+	//return score + rand()%10 - 5;
+	return score;
 	}
 #endif
 
@@ -3124,18 +3125,23 @@ static int quiescence(Hashmap hm, Board *board, int alpha, int beta) {
 	copy_board();
 
 
+	
+		int is_store = 0;
+		int sc = return_score(hm, temp, &is_store);
+		if(is_store == 1)
+			return sc;
 
 
 
 
 
 	//int evaluation = evaluate(temp);
-	#ifdef NNUE
+#ifdef NNUE
 	int evaluation = evaluate_nn(board);
-	#endif
-	#ifndef NNUE
+#endif
+#ifndef NNUE
 	int evaluation = evaluate(temp);
-	#endif
+#endif
 	if (evaluation >= beta) {
 		store_position(hm, temp, beta);
 		return beta;
@@ -3150,26 +3156,23 @@ static int quiescence(Hashmap hm, Board *board, int alpha, int beta) {
 
 	for (int i = 0; i < m.counter; i++) {
 
-		if(1) {
+		board->ply++;
+		make_move(board,m.moves[i]);
+		int score = -quiescence(hm, board, -beta, -alpha);
+		score -= m.value[i];
+		//store_position(hm, temp, score);
+		board->ply--;
 
-
-			board->ply++;
-			make_move(board,m.moves[i]);
-			int score = -quiescence(hm, board, -beta, -alpha);
-
-			//store_position(hm, temp, score);
-			board->ply--;
-
-			if (score >= beta) {
-				store_position(hm, temp, beta);
-				return beta;
-				}
-			take_board();
-			if (score > alpha) {
-				alpha = score;
-
-				}
+		if (score >= beta) {
+			store_position(hm, temp, beta);
+			return beta;
 			}
+		take_board();
+		if (score > alpha) {
+			alpha = score;
+
+			}
+
 		//copy_
 		store_position(hm, temp, alpha);
 		//else
@@ -3183,12 +3186,13 @@ static int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 	board->ply = 0;
 	Board temp;
 	copy_board();
+	
+		
 
 
 	if(depth == 0) {
-		//return evaluate(hm, temp);
 
-//		else
+
 		int is_store = 0;
 		int sc = return_score(hm, temp, &is_store);
 		if(is_store == 1)
@@ -3203,8 +3207,9 @@ static int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 		//	return sc;
 		//int score = evaluate(temp);
 		//store_position(hm, *board, score);
-		//int score = evaluate_nn(board)
+		//int score = evaluate_nn(board);
 		//return score;
+
 		return quiescence(hm, board, alpha, beta);
 
 
@@ -3222,15 +3227,18 @@ static int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 	for(int i = 0; i < m.counter; i++) {
 
 		make_move(board, m.moves[i]);
+		
+
 
 		//if(PIECE(m.moves[i]) )
 		int score;
 		score = -negamax(hm, board, -beta, -alpha, depth - 1);
+		//score += m.value[i];
 
 		board->ply--;
 		take_board();
 		if (score >= beta) {
-		//	store_position(hm, temp, beta);
+			//store_position(hm, temp, beta);
 			return beta;
 			}
 
@@ -3315,22 +3323,12 @@ int negamax_advanced(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 
 INLINE int search_position(Hashmap hm, Board *board,int depth) {
 	// find best move within a given position
-	int score;
-	if(NUM(board->position_alll) > 12 )
-		score = negamax(hm, board, -inf, inf, depth);
-	else if(NUM(board->position_alll) <=12 && NUM(board->position_alll) >= 8)
-		score = negamax(hm, board, -inf, inf, 6);
-	else
-		score = negamax(hm, board, -inf, inf, 8);
-	//int score = negamax_advanced(hm, board, -inf, inf, depth);
-	//int score = negamax_advanced(hm, board, -inf, inf, depth);
-	//for(int i = 3; i <= depth; i++ ){
-	//score = negamax(hm, board, score, inf, i);
-	printf("score is %d\n", score);
-//	}
+	//int range = negamax(hm, board, -inf, inf, 2);
+	//int range = evaluate_nn(board);
+	int score = negamax(hm, board, -inf, inf, depth);
+	printf("Score is %d\n", score);
 	return score;
 	}
-
 
 
 
