@@ -109,7 +109,7 @@ INLINE int LSB(U64 bitboard) {
 #if LOG_LSB
 		printf("TRAP_ZERO");
 #endif
-		return TRAP_ZERO;
+		//return TRAP_ZERO;
 		}
 
 	}
@@ -1264,8 +1264,8 @@ void print_magic() {
 
 
 //
-U64 bishop_attacks[64][512];
-U64 rook_attacks[64][4096];
+static U64 bishop_attacks[64][512];
+static U64 rook_attacks[64][4096];
 
 
 //THIS FUNCTION POPULATE bishop and rook atacks depending of position
@@ -3043,6 +3043,11 @@ INLINE int evaluate_nn(Board *bo) {
 		U64 bitboard =  bo->piece[i];
 		while(bitboard) {
 			square = LSB(bitboard);
+			if (check_is_square_attacked(WHITE, square))
+				score+=10;
+			if(check_is_square_attacked(BLACK, square)) {
+				score-=10;
+				}
 
 			//int squarea = mirror_score[square];
 			int squarea = mirror_score[square];
@@ -3109,12 +3114,18 @@ INLINE int evaluate_nn(Board *bo) {
 
 
 	if((bo->side == black) && (bo->piece[k] == 0))
+		score = -inf;
+	if((bo->side == white) && (bo->piece[k] == 0))
+		score = inf;
+
+
+	if((bo->side == black) && (bo->piece[K] == 0))
 		score = inf;
 	//	return (bo->side == white) ? inf : -inf;
 
 	//return (bo->side == white) ? score : -score;
-	//return score + rand()%10 - 5;
-	return score;
+	return score + rand()%2 - 4;
+	//return score;
 	}
 #endif
 
@@ -3159,7 +3170,7 @@ static int quiescence(Hashmap hm, Board *board, int alpha, int beta) {
 		board->ply++;
 		make_move(board,m.moves[i]);
 		int score = -quiescence(hm, board, -beta, -alpha);
-		score -= m.value[i];
+		//score -= m.value[i];
 		//store_position(hm, temp, score);
 		board->ply--;
 
@@ -3329,7 +3340,6 @@ INLINE int search_position(Hashmap hm, Board *board,int depth) {
 	printf("Score is %d\n", score);
 	return score;
 	}
-
 
 
 
