@@ -1922,7 +1922,9 @@ INLINE void generate_posible_moves(Board *bo, Moves *m, int is_capture, int is_q
 		//CHECK IS CASTLING POSIBLE 0 2 K Q
 		if(castle[0] && !GET(bo->position_alll, f1) && !GET(bo->position_alll, g1)) {
 			//MAYBE CHECK IS CHECK BUT IF CHECK ONLY LEGAL MOVES ARE WITH KING
-			if(check_is_square_attacked_board(black,f1, bo) == 0 && check_is_square_attacked_board(black, g1, bo) == 0) {
+			//if(check_is_square_attacked_board(black,f1, bo) == 0 && check_is_square_attacked_board(black, g1, bo) == 0) {
+	{
+	
 #if LOG_MOVES_KING
 				printf("WHITE CASTLE KING\n");
 #endif
@@ -1935,20 +1937,22 @@ INLINE void generate_posible_moves(Board *bo, Moves *m, int is_capture, int is_q
 				}
 			}
 		//QUEAN SIDE CASTLING
-		if(castle[2] && !GET((bo->position_alll), d1)
-		    && !GET(bo->position_alll, c1) && !GET(bo->position_alll, b1)) {
-			if(check_is_square_attacked_board(black,d1, bo) == 0
-			    && check_is_square_attacked_board(black,c1, bo) == 0
-			    && check_is_square_attacked_board(black, b1, bo) == 0) {
+		if(castle[2] && !GET(bo->position_alll, b1) && !GET(bo->position_alll, c1)&& !GET(bo->position_alll, d1)) {
+		//	if(check_is_square_attacked_board(black,d1, bo) == 0
+		//	    && check_is_square_attacked_board(black,c1, bo) == 0
+		//	    && check_is_square_attacked_board(black, b1, bo) == 0) 
+		{
 #if LOG_MOVES_KING
 				printf("WHITE CASTLE QUEAN\n");
 #endif
 				//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
 				if(is_quiet)
-					m->moves[m->counter++] = ENCODE(source, b1,K, 0, 0, 0,0,1);
+					m->moves[m->counter++] = ENCODE(source, c1,K, 0, 0, 0,0,1);
 
 				}
 			}
+			
+			
 
 		//CHECK OTHER KING MOVES
 		while(bitboard) {
@@ -2276,7 +2280,8 @@ INLINE void generate_posible_moves(Board *bo, Moves *m, int is_capture, int is_q
 		//CHECK IS CASTLING POSIBLE 1 3 k q
 		if(castle[1] && !GET(bo->position_alll, f8) && !GET(bo->position_alll, g8)) {
 			//MAYBE CHECK IS CHECK BUT IF CHECK ONLY LEGAL MOVES ARE WITH KING
-			if(check_is_square_attacked_board(white,f8, bo) == 0 && check_is_square_attacked_board(white,g8, bo) == 0) {
+			//if(check_is_square_attacked_board(white,f8, bo) == 0 && check_is_square_attacked_board(white,g8, bo) == 0) 
+			{
 #if LOG_MOVES_KING
 				printf("BLACK CASTLE KING\n");
 #endif
@@ -2291,8 +2296,9 @@ INLINE void generate_posible_moves(Board *bo, Moves *m, int is_capture, int is_q
 		//QUEAN SIDE CASTLING
 		if(castle[3] && !GET((bo->position_alll), d8)
 		    && !GET(bo->position_alll, c8) && !GET(bo->position_alll, b8)) {
-			if(check_is_square_attacked_board(white,d8, bo) == 0 && check_is_square_attacked_board(white,c8, bo) == 0
-			    && check_is_square_attacked_board(white,b8, bo) == 0) { //MAYBE NO B8
+//			if(check_is_square_attacked_board(white,d8, bo) == 0 && check_is_square_attacked_board(white,c8, bo) == 0
+//			    && check_is_square_attacked_board(white,b8, bo) == 0) 
+					{ //MAYBE NO B8
 #if LOG_MOVES_KING
 				printf("BLACK CASTLE QUEAN\n");
 #endif
@@ -2665,7 +2671,7 @@ static inline void make_move(Board *board, int move) {
 
 
 			case (c8):
-				POP(board->piece[r], h8);
+				POP(board->piece[r], a8);
 				SET(board->piece[r], d8);
 				break;
 			}
@@ -2711,7 +2717,7 @@ static inline void make_move(Board *board, int move) {
 	if(!GET(board->piece[r], a8))
 		board->castle[3] = 0;
 
-	if(!GET(board->piece[R], h1))
+	if(!GET(board->piece[r], h8))
 		board->castle[1] = 0;
 
 
@@ -3337,7 +3343,7 @@ INLINE int search_position(Hashmap hm, Board *board,int depth) {
 	//int range = negamax(hm, board, -inf, inf, 2);
 	//int range = evaluate_nn(board);
 	int score = negamax(hm, board, -inf, inf, depth);
-	printf("Score is %d\n", score);
+//	/printf("Score is %d\n", score);
 	return score;
 	}
 
