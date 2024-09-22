@@ -28,6 +28,7 @@
 #define GREEN   0x00FF0000
 #define WHITEE  0x00800020
 #define NNUE
+#define EVAL_SQUARE 1
 #include "generator.h"
 #include "load_pieces.h"
 
@@ -230,7 +231,7 @@ int main() {
 	init_nnue("main.nnue");
 #endif
 	//exit(-1);
-	static Board board;
+	Board board;
 	//Moves m;
 	//m.counter = 0;
 	print_board();
