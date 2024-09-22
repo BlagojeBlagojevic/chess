@@ -1673,7 +1673,7 @@ INLINE void rate_moves(Board *bo, Moves *m) {
 
 		}
 	}
-	
+
 
 INLINE void sort_moves1(Board *bo, Moves *m) {
 	rate_moves(bo, m);
@@ -1923,8 +1923,8 @@ INLINE void generate_posible_moves(Board *bo, Moves *m, int is_capture, int is_q
 		if(castle[0] && !GET(bo->position_alll, f1) && !GET(bo->position_alll, g1)) {
 			//MAYBE CHECK IS CHECK BUT IF CHECK ONLY LEGAL MOVES ARE WITH KING
 			//if(check_is_square_attacked_board(black,f1, bo) == 0 && check_is_square_attacked_board(black, g1, bo) == 0) {
-	{
-	
+				{
+
 #if LOG_MOVES_KING
 				printf("WHITE CASTLE KING\n");
 #endif
@@ -1938,10 +1938,10 @@ INLINE void generate_posible_moves(Board *bo, Moves *m, int is_capture, int is_q
 			}
 		//QUEAN SIDE CASTLING
 		if(castle[2] && !GET(bo->position_alll, b1) && !GET(bo->position_alll, c1)&& !GET(bo->position_alll, d1)) {
-		//	if(check_is_square_attacked_board(black,d1, bo) == 0
-		//	    && check_is_square_attacked_board(black,c1, bo) == 0
-		//	    && check_is_square_attacked_board(black, b1, bo) == 0) 
-		{
+			//	if(check_is_square_attacked_board(black,d1, bo) == 0
+			//	    && check_is_square_attacked_board(black,c1, bo) == 0
+			//	    && check_is_square_attacked_board(black, b1, bo) == 0)
+				{
 #if LOG_MOVES_KING
 				printf("WHITE CASTLE QUEAN\n");
 #endif
@@ -1951,8 +1951,8 @@ INLINE void generate_posible_moves(Board *bo, Moves *m, int is_capture, int is_q
 
 				}
 			}
-			
-			
+
+
 
 		//CHECK OTHER KING MOVES
 		while(bitboard) {
@@ -2280,8 +2280,8 @@ INLINE void generate_posible_moves(Board *bo, Moves *m, int is_capture, int is_q
 		//CHECK IS CASTLING POSIBLE 1 3 k q
 		if(castle[1] && !GET(bo->position_alll, f8) && !GET(bo->position_alll, g8)) {
 			//MAYBE CHECK IS CHECK BUT IF CHECK ONLY LEGAL MOVES ARE WITH KING
-			//if(check_is_square_attacked_board(white,f8, bo) == 0 && check_is_square_attacked_board(white,g8, bo) == 0) 
-			{
+			//if(check_is_square_attacked_board(white,f8, bo) == 0 && check_is_square_attacked_board(white,g8, bo) == 0)
+				{
 #if LOG_MOVES_KING
 				printf("BLACK CASTLE KING\n");
 #endif
@@ -2297,8 +2297,9 @@ INLINE void generate_posible_moves(Board *bo, Moves *m, int is_capture, int is_q
 		if(castle[3] && !GET((bo->position_alll), d8)
 		    && !GET(bo->position_alll, c8) && !GET(bo->position_alll, b8)) {
 //			if(check_is_square_attacked_board(white,d8, bo) == 0 && check_is_square_attacked_board(white,c8, bo) == 0
-//			    && check_is_square_attacked_board(white,b8, bo) == 0) 
-					{ //MAYBE NO B8
+//			    && check_is_square_attacked_board(white,b8, bo) == 0)
+				{
+				//MAYBE NO B8
 #if LOG_MOVES_KING
 				printf("BLACK CASTLE QUEAN\n");
 #endif
@@ -2758,7 +2759,7 @@ static inline void make_move(Board *board, int move) {
 
 #define LOG_EVALUATION 0
 
-#define inf 1000000000
+#define inf 10000000
 int mg_table[6][64] = {{
 		0,   0,   0,   0,   0,   0,  0,   0,
 		98, 134,  61,  95,  68, 126, 34, -11,
@@ -3034,7 +3035,7 @@ INLINE int evaluate_nn(Board *bo) {
 
 	static int pieces[33];
 	static int squares[33];
-	
+
 	const int wking=1, wqueen=2, wrook=3, wbishop= 4, wknight= 5, wpawn= 6;
 	const int bking=7, bqueen=8, brook=9, bbishop=10, bknight=11, bpawn=12;
 	int counter = 2;
@@ -3049,12 +3050,13 @@ INLINE int evaluate_nn(Board *bo) {
 		U64 bitboard =  bo->piece[i];
 		while(bitboard) {
 			square = LSB(bitboard);
+#ifdef EVAL_SQUARE
 			if (check_is_square_attacked(WHITE, square))
-				score+=10;
+				score+=EVAL_SQUARE;
 			if(check_is_square_attacked(BLACK, square)) {
-				score-=10;
+				score-=EVAL_SQUARE;
 				}
-
+#endif
 			//int squarea = mirror_score[square];
 			int squarea = mirror_score[square];
 			switch(i) {
@@ -3142,11 +3144,11 @@ static int quiescence(Hashmap hm, Board *board, int alpha, int beta) {
 	copy_board();
 
 
-	
-		int is_store = 0;
-		int sc = return_score(hm, temp, &is_store);
-		if(is_store == 1)
-			return sc;
+
+	int is_store = 0;
+	int sc = return_score(hm, temp, &is_store);
+	if(is_store == 1)
+		return sc;
 
 
 
@@ -3203,8 +3205,8 @@ static int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 	board->ply = 0;
 	Board temp;
 	copy_board();
-	
-		
+
+
 
 
 	if(depth == 0) {
@@ -3244,7 +3246,7 @@ static int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 	for(int i = 0; i < m.counter; i++) {
 
 		make_move(board, m.moves[i]);
-		
+
 
 
 		//if(PIECE(m.moves[i]) )
