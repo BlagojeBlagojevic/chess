@@ -28,13 +28,13 @@
 #define GREEN   0x00FF0000
 #define WHITEE  0x00800020
 #define NNUE
-#define EVAL_SQUARE 1
-#include "generator.h"
+//#define EVAL_SQUARE 1
+#include "engine.h"
 #include "load_pieces.h"
 
 //#include "move.h"
 
-
+#define NUM_OF_MOVES_FUTURE 4
 
 void Draw_Board(SDL_Renderer *renderer) {
 
@@ -118,7 +118,7 @@ void Procss_Mouse_InputB(Board *b){
 		uint8_t isMake = FALSE;
 	  SDL_Event event;
 		while(!isMake) {
-			SDL_Delay(10);
+			//SDL_Delay(10);
 			SDL_WaitEvent(&event);
 			if(event.type == SDL_MOUSEBUTTONDOWN){
 		//		printf("Making move\n\n");
@@ -239,7 +239,7 @@ int main() {
 	srand(time(0));
 	//Piece_Loader(renderer,board,&pieces);
 	init_board_state(&board);
-	static Hashmap ma;
+	Hashmap ma;
 	init_hashmap(&ma);
 
 	int side = rand()%2;
@@ -281,7 +281,7 @@ int main() {
 		//generate_posible_moves(board, &m,1,1);
 
 		//int index = index_bestT(board, ma, m);
-		int score = search_position(ma, &board, 4);
+		int score = search_position(ma, &board, NUM_OF_MOVES_FUTURE);
 		//print_move(board.best_move);
 		make_move(&board, board.best_move);
 		//system("pause");
