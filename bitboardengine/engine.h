@@ -1,3 +1,5 @@
+#ifndef ENGINE_H
+#define ENGINE_H
 
 #include<stdint.h>
 #include <string.h>
@@ -1005,6 +1007,14 @@ INLINE U64 rand64() {
 	return b;
 	}
 
+//static U64 seed = 1234;
+//INLINE U64 rand64(){
+
+    
+ //   return (seed = (164603309694725029ull * seed) % 14738995463583502973ull);
+
+//}
+
 // MAYBE MACRO
 INLINE U64 magic_candidate() {
 
@@ -1085,7 +1095,7 @@ INLINE U64 find_magic_number(int square, int relevant_bits, int what_piece) {
 
 // init magic numbers
 
-static U64 rook_magic_numbers[64] = {
+static const U64 rook_magic_numbers[64] = {
 
 	0x8a80104000800020ULL,
 	0x140002000100040ULL,
@@ -1152,7 +1162,7 @@ static U64 rook_magic_numbers[64] = {
 	0x2006104900a0804ULL,
 	0x1004081002402ULL
 	};
-static U64 bishop_magic_numbers[64] = {
+static const U64 bishop_magic_numbers[64] = {
 
 	0x40040844404084ULL,
 	0x2004208a004208ULL,
@@ -1222,7 +1232,7 @@ static U64 bishop_magic_numbers[64] = {
 
 
 
-
+/*
 Trap init_magic_numbers() {
 	for (int square = 0; square < 64; square++) {
 		if((rook_magic_numbers[square] = find_magic_number(square, rook_relevant[square], rook)) == (U64)TRAP_MAGIC)
@@ -1242,7 +1252,7 @@ Trap init_magic_numbers() {
 	return TRAP_OK;
 
 	}
-
+*/
 void print_magic() {
 
 	printf("\n\n\t BISHOP MAGIC\n\n");
@@ -1558,7 +1568,7 @@ void print_move(int move) {
 	}
 
 //black,c1, &bo
-INLINE int check_is_square_attacked_board(int side, int square, Board *bo) {
+INLINE int check_is_square_attacked_board(int side, int square, const Board *__restrict__ bo) {
 
 	const U64 white_pawna     = bo->piece[P];
 	const U64 white_knighta   = bo->piece[N];
@@ -1604,7 +1614,7 @@ INLINE int check_is_square_attacked_board(int side, int square, Board *bo) {
 
 
 
-INLINE void sort_moves(Board *bo, Moves *m) {
+INLINE void sort_moves(const Board *__restrict__ bo, Moves *__restrict__ m) {
 	for(int i = 1; i < m->counter; i++) {
 		//IF IS CAPTURE FIRST
 		if(CAPTURE(m->moves[i])) {
@@ -1630,7 +1640,7 @@ INLINE void sort_moves(Board *bo, Moves *m) {
 	}
 //}
 //RATE THE MOVES WE WILL PICE VALUE
-INLINE void rate_moves(Board *bo, Moves *m) {
+INLINE void rate_moves(const Board *__restrict__ bo, Moves *__restrict__ m) {
 	for(int i = 0; i < m->counter; i++) {
 		//IF MOVE CAPTURE
 		//GET PIECE ON SQUARE
@@ -1675,7 +1685,7 @@ INLINE void rate_moves(Board *bo, Moves *m) {
 	}
 
 
-INLINE void sort_moves1(Board *bo, Moves *m) {
+INLINE void sort_moves1(const Board *__restrict__ bo, Moves *__restrict__ m) {
 	rate_moves(bo, m);
 
 	for(int i = 0; i < m->counter; i++) {
@@ -1718,16 +1728,16 @@ INLINE void sort_moves1(Board *bo, Moves *m) {
 
 typedef struct {
 
-	int   *score;
-	U64   *zob;
+	int   *__restrict__  score;
+	U64   *__restrict__ zob;
 	//Moves *moves;
 
 	} Hashmap;
 
 
-U64 zob_table[64][12];
+static U64 zob_table[64][12];
 
-void init_hashmap(Hashmap *m) {
+void init_hashmap(Hashmap *__restrict__ m) {
 
 	m->score = (int*)calloc(HASHSIZE,sizeof(int));
 	m->zob   = (U64*)calloc(HASHSIZE,sizeof(U64));
@@ -1735,15 +1745,15 @@ void init_hashmap(Hashmap *m) {
 	for(size_t j = 0; j < 12; j++)
 		for(size_t i = 0; i < 64; i++) {
 			zob_table[i][j] = rand64();
-			//printf("%lu\n", zob_table[i][j]);
+			printf("%lu\n", zob_table[i][j]);
 			}
 	}
 //void free_hashmap(Hashmap *m);
 
-INLINE  U64 hash(Board b) {
+INLINE  U64 hash(const Board *b) {
 	U64 key = 0;
 	for(int i = P; i <= k ; i++) {
-		U64 bitboard = b.piece[i];
+		U64 bitboard = b->piece[i];
 
 		while(bitboard) {
 
@@ -1760,7 +1770,7 @@ INLINE  U64 hash(Board b) {
 	return key;
 	}
 
-INLINE void store_position(Hashmap m,Board b, int score) {
+INLINE void store_position(Hashmap m,const Board *b, int score) {
 
 	U64 i = hash(b);
 	U64 index = i % HASHSIZE;
@@ -1770,7 +1780,7 @@ INLINE void store_position(Hashmap m,Board b, int score) {
 	//generate_posible_moves(&b, &m, 1, 1);
 	//memcpy(&m->moves, &m, sizeof(Moves));
 	}
-INLINE int return_score(Hashmap m, Board b, int *is_store) {
+INLINE int return_score(Hashmap m,const Board *b, int *is_store) {
 	U64 a = hash(b);
 	U32 index = a % HASHSIZE;
 	//printf("Index %d", index);
@@ -1789,7 +1799,7 @@ INLINE int return_score(Hashmap m, Board b, int *is_store) {
 
 
 
-INLINE void generate_posible_moves(Board *bo, Moves *m, int is_capture, int is_quiet) {
+INLINE void generate_posible_moves(const Board *__restrict__ bo, Moves *__restrict__ m,const int is_capture,const int is_quiet) {
 
 	static int target, source; // SQUER WITCH MOVE STARTS FROM AND WHER TO GO
 
@@ -2568,7 +2578,7 @@ void print_move_list(Moves *move_list) {
 #define LOG_MOVES 0
 // FUNCTION USED TO GENARTES MOVE AND RETURN IT WE ACCEPT BOARD STRUCTURE AS INPUT
 __attribute__((always_inline))
-static inline void make_move(Board *board, int move) {
+static inline void make_move(Board *__restrict__ board, int move) {
 	Board temp;// = &board;
 	memcpy(&temp, board, sizeof(Board));
 	//temp = board;  // LIKE MEMCPY WITHOUT ONE
@@ -3031,7 +3041,7 @@ INLINE int evaluate( Board board) {
 */
 
 #ifdef NNUE
-INLINE int evaluate_nn(Board *bo) {
+INLINE int evaluate_nn(Board *__restrict__ bo) {
 
 	static int pieces[33];
 	static int squares[33];
@@ -3132,12 +3142,12 @@ INLINE int evaluate_nn(Board *bo) {
 	//	return (bo->side == white) ? inf : -inf;
 
 	//return (bo->side == white) ? score : -score;
-	return score + rand()%2 - 4;
+	return score; //+ rand()%2 - 4;
 	//return score;
 	}
 #endif
 
-static int quiescence(Hashmap hm, Board *board, int alpha, int beta) {
+static int quiescence(Hashmap hm, Board *__restrict__ board, int alpha, int beta) {
 
 	Board temp;
 	Moves m;
@@ -3146,7 +3156,7 @@ static int quiescence(Hashmap hm, Board *board, int alpha, int beta) {
 
 
 	int is_store = 0;
-	int sc = return_score(hm, temp, &is_store);
+	int sc = return_score(hm, board, &is_store);
 	if(is_store == 1)
 		return sc;
 
@@ -3162,7 +3172,7 @@ static int quiescence(Hashmap hm, Board *board, int alpha, int beta) {
 	int evaluation = evaluate(temp);
 #endif
 	if (evaluation >= beta) {
-		store_position(hm, temp, beta);
+		store_position(hm, board, beta);
 		return beta;
 		}
 
@@ -3183,7 +3193,7 @@ static int quiescence(Hashmap hm, Board *board, int alpha, int beta) {
 		board->ply--;
 
 		if (score >= beta) {
-			store_position(hm, temp, beta);
+			store_position(hm, board, beta);
 			return beta;
 			}
 		take_board();
@@ -3193,15 +3203,14 @@ static int quiescence(Hashmap hm, Board *board, int alpha, int beta) {
 			}
 
 		//copy_
-		store_position(hm, temp, alpha);
+		store_position(hm, board, alpha);
 		//else
 		return alpha;
 		}
 	return alpha;
 	}
 
-
-static int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
+static int negamax(Hashmap hm, Board *__restrict__ board, int alpha, int beta, int depth) {
 	board->ply = 0;
 	Board temp;
 	copy_board();
@@ -3213,7 +3222,7 @@ static int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 
 
 		int is_store = 0;
-		int sc = return_score(hm, temp, &is_store);
+		int sc = return_score(hm, board, &is_store);
 		if(is_store == 1)
 			return sc;
 
@@ -3257,7 +3266,7 @@ static int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 		board->ply--;
 		take_board();
 		if (score >= beta) {
-			//store_position(hm, temp, beta);
+			store_position(hm, board, beta);
 			return beta;
 			}
 
@@ -3272,12 +3281,11 @@ static int negamax(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 	if (old_alpha != alpha)
 		board->best_move = best_sofar;
 
-	//store_position(hm, temp, alpha);
+	store_position(hm, board, alpha);
 	return alpha;
 
 
 	}
-
 
 
 int negamax_advanced(Hashmap hm, Board *board, int alpha, int beta, int depth) {
@@ -3340,14 +3348,19 @@ int negamax_advanced(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 
 
 
-INLINE int search_position(Hashmap hm, Board *board,int depth) {
+extern inline int search_position(Hashmap hm, Board *board,int depth) {
 	// find best move within a given position
 	//int range = negamax(hm, board, -inf, inf, 2);
 	//int range = evaluate_nn(board);
-	int score = negamax(hm, board, -inf, inf, depth);
+	
+	int score;
+	score = negamax(hm, board, -inf, inf, depth);
+	
+	
 //	/printf("Score is %d\n", score);
 	return score;
 	}
 
+#endif
 
 
