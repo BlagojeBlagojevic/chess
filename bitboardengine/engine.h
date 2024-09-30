@@ -111,7 +111,7 @@ INLINE int LSB(U64 bitboard) {
 #if LOG_LSB
 		printf("TRAP_ZERO");
 #endif
-		//return TRAP_ZERO;
+		return TRAP_ZERO;
 		}
 
 	}
@@ -3362,5 +3362,4 @@ extern inline int search_position(Hashmap hm, Board *board,int depth) {
 	}
 
 #endif
-
 
