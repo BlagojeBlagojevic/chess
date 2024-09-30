@@ -1721,7 +1721,7 @@ INLINE void sort_moves1(const Board *__restrict__ bo, Moves *__restrict__ m) {
 //IT WILL HAVE 100MB OF MEMORY(SIZE) AND USE ZOBRIST HASH FOR ACCESING BOARD VALUE
 
 //#define HASHSIZE 1073741800
-#define HASHSIZE 107374182
+#define HASHSIZE 10737418
 
 //#define HASHSIZE 107374
 //4157458668
@@ -1794,12 +1794,65 @@ INLINE int return_score(Hashmap m,const Board *b, int *is_store) {
 	return m.score[index];
 	}
 
+//HAHSMAP FOR STORING THE MOVES
+
+typedef struct {
+	Moves *move;
+	U64   *zob;
+}HashMapM;
+
+
+HashMapM hashmapm;
+
+#define HASHMOVESIZE 1000000
+void init_hashmap_moves(){
+		hashmapm.move  = (Moves*)calloc(HASHMOVESIZE, sizeof(Moves));
+		hashmapm.zob   = (U64*)calloc(HASHMOVESIZE, sizeof(U64));
+	
+}
+
+
+INLINE void store_moves(const Board *b, Moves *m) {
+
+	U64 i = hash(b);
+	U64 index = i % HASHMOVESIZE;
+	if(hashmapm.zob[index]==0){
+			hashmapm.zob[index] = index;
+			memcpy(&hashmapm.move[index], m, sizeof(Moves));		
+	}
+
+	//Moves m;
+	//generate_posible_moves(&b, &m, 1, 1);
+	//memcpy(&m->moves, &m, sizeof(Moves));
+	}
+INLINE Moves return_moves(const Board *b, int *is_store) {
+	U64 a = hash(b);
+	U32 index = a % HASHMOVESIZE;
+	//printf("Index %d", index);
+	if(hashmapm.zob[index] == a) {
+		*is_store = 1;
+		}
+	else {
+		*is_store = 0;
+		}
+
+	return hashmapm.move[index];
+	}
+
+
 
 
 
 
 
 INLINE void generate_posible_moves(const Board *__restrict__ bo, Moves *__restrict__ m,const int is_capture,const int is_quiet) {
+	int is_store = 0;
+	Moves move = return_moves(bo, &is_store);
+	if(is_store == 1 && move.counter != 0){
+			memcpy(m, &move, sizeof(Moves));
+			return;
+		}			
+
 
 	static int target, source; // SQUER WITCH MOVE STARTS FROM AND WHER TO GO
 
@@ -2514,6 +2567,7 @@ INLINE void generate_posible_moves(const Board *__restrict__ bo, Moves *__restri
 	///* //ORDER OF MOVES FOR SEARCH
 	//sort_moves(bo, m);
 	sort_moves1(bo, m);
+	store_moves(bo, m);
 	//*/
 
 
