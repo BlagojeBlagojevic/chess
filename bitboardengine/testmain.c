@@ -28,7 +28,7 @@
 #define GREEN   0x00FF0000
 #define WHITEE  0x00800020
 #define NNUE
-#include "generator.h"
+#include "engine.h"
 #include "load_pieces.h"
 
 //#include "move.h"
