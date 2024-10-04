@@ -33,12 +33,19 @@ This is a custom chess engine written in **C** that uses **bitboards** for repre
     ```
 
 3. Build the project using whatever:
-  Ther are two diferent c files:
-    1. main.c -> When this file is compiled we get ability to play a game versus the engine.
-    2. testmain.c -> This c file is compiled for testing purposes of testing(Engine plays versus himself).
+
+   Ther are two diferent c files:
+    
+    1. `main.c` -> When this file is compiled we get ability to play a game versus the engine.
+    2. `testmain.c` -> This c file is compiled for testing purposes of testing(Engine plays versus himself).
+   
+   Ther are 3 files ralated to engine: 
+    
+    1. `engine.h` -> Contains implementation of engine and depends on `nnue_eval.c` and `nnue_eval.h`. 
+    2. `nnue_eval.c` and `nnue_eval.h` -> Wraper around cpp implemnetation in nnue folder.
+    
   
-
-
+   Other files are related to gui.
 
 
 ## Limitations
