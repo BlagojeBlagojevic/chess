@@ -66,7 +66,7 @@ void load_White_King(SDL_Renderer *renderer, Piece *pieces,size_t num_of_pices,s
 	pieces[num_of_pices].is_piece_selected = FALSE;
 	pieces[num_of_pices].is_piece_eaten = FALSE;
 	//pieces[num_of_pices].name[] = "white_king";
-	strcpy_s(pieces[num_of_pices].name,100,"white_king");
+	strcpy(pieces[num_of_pices].name,"white_king");
 	pieces[num_of_pices].color = TRUE;
 	pieces[num_of_pices].num_of_moves = FALSE;
 	pieces[num_of_pices].is_move = FALSE;
@@ -82,7 +82,7 @@ void load_Black_King(SDL_Renderer *renderer, Piece *pieces,size_t num_of_pices,s
 	pieces[num_of_pices].position.w = SQUER_SIZE - 1;
 	pieces[num_of_pices].position.x = x * SQUER_SIZE;
 	pieces[num_of_pices].position.y = y * SQUER_SIZE;
-	strcpy_s(pieces[num_of_pices].name,100,"black_king");
+	strcpy(pieces[num_of_pices].name,"black_king");
 	pieces[num_of_pices].pieces_name = BLACK_KING;
 	pieces[num_of_pices].is_piece_selected = FALSE;
 	pieces[num_of_pices].is_piece_eaten = FALSE;
@@ -102,7 +102,7 @@ void load_White_Queen(SDL_Renderer *renderer, Piece *pieces,size_t num_of_pices,
 	pieces[num_of_pices].position.w = SQUER_SIZE - 1;
 	pieces[num_of_pices].position.x = x * SQUER_SIZE;
 	pieces[num_of_pices].position.y = y * SQUER_SIZE;
-	strcpy_s(pieces[num_of_pices].name,100,"white_queen");
+	strcpy(pieces[num_of_pices].name,"white_queen");
 	pieces[num_of_pices].pieces_name = WHITE_QUEEN;
 	pieces[num_of_pices].is_piece_selected = FALSE;
 	pieces[num_of_pices].is_piece_eaten = FALSE;
@@ -123,7 +123,7 @@ void load_Black_Queen(SDL_Renderer *renderer, Piece *pieces,size_t num_of_pices,
 	pieces[num_of_pices].position.x = x * SQUER_SIZE;
 	pieces[num_of_pices].position.y = y * SQUER_SIZE;
 	//pieces[num_of_pices].name[] = "black_queen";
-	strcpy_s(pieces[num_of_pices].name,100,"black_queen");
+	strcpy(pieces[num_of_pices].name,"black_queen");
 	pieces[num_of_pices].pieces_name = BLACK_QUEEN;
 	pieces[num_of_pices].is_piece_selected = FALSE;
 	pieces[num_of_pices].is_piece_eaten = FALSE;
@@ -143,7 +143,7 @@ void load_White_Rook(SDL_Renderer *renderer, Piece *pieces,size_t num_of_pices,s
 	pieces[num_of_pices].position.x = x * SQUER_SIZE;
 	pieces[num_of_pices].position.y = y * SQUER_SIZE;
 	//pieces[num_of_pices].name[] = "white_rook";
-	strcpy_s(pieces[num_of_pices].name,100,"white_rook");
+	strcpy(pieces[num_of_pices].name,"white_rook");
 	pieces[num_of_pices].pieces_name = WHITE_ROOK;
 	pieces[num_of_pices].is_piece_selected = FALSE;
 	pieces[num_of_pices].is_piece_eaten = FALSE;
@@ -163,7 +163,7 @@ void load_Black_Rook(SDL_Renderer *renderer, Piece *pieces,size_t num_of_pices,s
 	pieces[num_of_pices].position.x = x * SQUER_SIZE;
 	pieces[num_of_pices].position.y = y * SQUER_SIZE;
 	//pieces[num_of_pices].name[] = "black_rook";
-	strcpy_s(pieces[num_of_pices].name,100,"black_rook");
+	strcpy(pieces[num_of_pices].name,"black_rook");
 	pieces[num_of_pices].pieces_name = BLACK_ROOK;
 	pieces[num_of_pices].is_piece_selected = FALSE;
 	pieces[num_of_pices].is_piece_eaten = FALSE;
@@ -183,7 +183,7 @@ void load_White_Knight(SDL_Renderer *renderer, Piece *pieces,size_t num_of_pices
 	pieces[num_of_pices].position.x = x * SQUER_SIZE;
 	pieces[num_of_pices].position.y = y * SQUER_SIZE;
 	//pieces[num_of_pices].name[] = "white_knight";
-	strcpy_s(pieces[num_of_pices].name,100,"white_knight");
+	strcpy(pieces[num_of_pices].name,"white_knight");
 	pieces[num_of_pices].pieces_name = WHITE_KNIGHT;
 	pieces[num_of_pices].is_piece_selected = FALSE;
 	pieces[num_of_pices].is_piece_eaten = FALSE;
@@ -203,7 +203,7 @@ void load_Black_Knight(SDL_Renderer *renderer, Piece *pieces,size_t num_of_pices
 	pieces[num_of_pices].position.x = x * SQUER_SIZE;
 	pieces[num_of_pices].position.y = y * SQUER_SIZE;
 	//pieces[num_of_pices].name[] = "black_knight";
-	strcpy_s(pieces[num_of_pices].name,100,"black_knight");
+	strcpy(pieces[num_of_pices].name,"black_knight");
 	pieces[num_of_pices].pieces_name = BLACK_KNIGHT;
 	pieces[num_of_pices].is_piece_selected = FALSE;
 	pieces[num_of_pices].is_piece_eaten = FALSE;
@@ -223,7 +223,7 @@ void load_White_Bishop(SDL_Renderer *renderer, Piece *pieces,size_t num_of_pices
 	pieces[num_of_pices].position.x = x * SQUER_SIZE;
 	pieces[num_of_pices].position.y = y * SQUER_SIZE;
 	//pieces[num_of_pices].name[] = "white_bishop";
-	strcpy_s(pieces[num_of_pices].name,100,"white_bishop");
+	strcpy(pieces[num_of_pices].name,"white_bishop");
 	pieces[num_of_pices].pieces_name = WHITE_BISHOP;
 	pieces[num_of_pices].is_piece_selected = FALSE;
 	pieces[num_of_pices].is_piece_eaten = FALSE;
@@ -243,7 +243,7 @@ void load_Black_Bishop(SDL_Renderer *renderer, Piece *pieces,size_t num_of_pices
 	pieces[num_of_pices].position.x = x * SQUER_SIZE;
 	pieces[num_of_pices].position.y = y * SQUER_SIZE;
 
-	strcpy_s(pieces[num_of_pices].name,100,"black_bishop");
+	strcpy(pieces[num_of_pices].name,"black_bishop");
 	pieces[num_of_pices].pieces_name = BLACK_BISHOP;
 	pieces[num_of_pices].is_piece_selected = FALSE;
 	pieces[num_of_pices].is_piece_eaten = FALSE;
@@ -263,7 +263,7 @@ void load_White_Pawn(SDL_Renderer *renderer, Piece *pieces,size_t num_of_pices,s
 	pieces[num_of_pices].position.x = x * SQUER_SIZE;
 	pieces[num_of_pices].position.y = y * SQUER_SIZE;
 	//pieces[num_of_pices].name[] = "white_pawn";
-	strcpy_s(pieces[num_of_pices].name,100,"white_pawn");
+	strcpy(pieces[num_of_pices].name,"white_pawn");
 	pieces[num_of_pices].pieces_name = WHITE_PAWN;
 	pieces[num_of_pices].is_piece_selected = FALSE;
 	pieces[num_of_pices].is_piece_eaten = FALSE;
@@ -283,7 +283,7 @@ void load_Black_Pawn(SDL_Renderer *renderer, Piece *pieces,size_t num_of_pices,s
 	pieces[num_of_pices].position.x = x * SQUER_SIZE;
 	pieces[num_of_pices].position.y = y * SQUER_SIZE;
 	//pieces[num_of_pices].name[] = "black_pawn";
-	strcpy_s(pieces[num_of_pices].name,100,"black_pawn");
+	strcpy(pieces[num_of_pices].name,"black_pawn");
 	pieces[num_of_pices].pieces_name = BLACK_PAWN;
 	pieces[num_of_pices].is_piece_selected = FALSE;
 	pieces[num_of_pices].is_piece_eaten = FALSE;
