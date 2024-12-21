@@ -3,6 +3,7 @@
 
 #include<stdint.h>
 #include <string.h>
+#include <math.h>
 #ifdef NNUE
 #include "nnue_eval.h"
 #endif
@@ -1721,9 +1722,9 @@ INLINE void sort_moves1(const Board *__restrict__ bo, Moves *__restrict__ m) {
 //IT WILL HAVE 100MB OF MEMORY(SIZE) AND USE ZOBRIST HASH FOR ACCESING BOARD VALUE
 
 //#define HASHSIZE 1073741800
-#define HASHSIZE 107374182
+//#define HASHSIZE 10737418
 
-//#define HASHSIZE 107374
+#define HASHSIZE 1000000
 //4157458668
 
 typedef struct {
@@ -1731,7 +1732,7 @@ typedef struct {
 	int   *__restrict__  score;
 	U64   *__restrict__ zob;
 	//Moves *moves;
-
+	U64 counter
 	} Hashmap;
 
 
@@ -1747,6 +1748,7 @@ void init_hashmap(Hashmap *__restrict__ m) {
 			zob_table[i][j] = rand64();
 			printf("%lu\n", zob_table[i][j]);
 			}
+	m->counter = 0;
 	}
 //void free_hashmap(Hashmap *m);
 
@@ -1765,25 +1767,40 @@ INLINE  U64 hash(const Board *b) {
 
 		}
 
-	//printf("hash %u\n", key % HASHSIZE);
-	//system("pause");
 	return key;
 	}
 
 INLINE void store_position(Hashmap m,const Board *b, int score) {
 
 	U64 i = hash(b);
-	U64 index = i % HASHSIZE;
+	//U64 index = i % HASHSIZE;
+	double Que = (double)i / (double)HASHSIZE;
+	Que = trunc(Que);
+	double Rem = (double)i - (double)HASHSIZE * Que; 
+	U64 index = (U64)Rem;
 	m.zob[index] = i;
 	m.score[index] = score;
+	m.counter++;
+	//printf("\tStored %d\n", index);
+	if(m.counter >= HASHSIZE / 2){
+		printf("\n\tClear hashmap !!!\n\n");
+		m.counter = 0;
+		for(int i = 0; i < HASHSIZE; i++){
+			m.zob[i] = 0;
+		}
+	}
 	//Moves m;
 	//generate_posible_moves(&b, &m, 1, 1);
 	//memcpy(&m->moves, &m, sizeof(Moves));
 	}
 INLINE int return_score(Hashmap m,const Board *b, int *is_store) {
 	U64 a = hash(b);
-	U32 index = a % HASHSIZE;
+	//U32 index = a % HASHSIZE;
 	//printf("Index %d", index);
+	double Que = (double)a / (double)HASHSIZE;
+	Que = trunc(Que);
+	double Rem = (double)a - (double)HASHSIZE * Que; 
+	U64 index = (U64)Rem;
 	if(m.zob[index] == a) {
 		*is_store = 1;
 		}
@@ -1794,16 +1811,83 @@ INLINE int return_score(Hashmap m,const Board *b, int *is_store) {
 	return m.score[index];
 	}
 
+//HAHSMAP FOR STORING THE MOVES
+
+typedef struct {
+	Moves *move;
+	U64   *zob;
+	U64 counter;
+}HashMapM;
+
+
+HashMapM hashmapm;
+
+#define HASHMOVESIZE 100000
+void init_hashmap_moves(){
+		hashmapm.move  = (Moves*)calloc(HASHMOVESIZE, sizeof(Moves));
+		hashmapm.zob   = (U64*)calloc(HASHMOVESIZE, sizeof(U64));
+		hashmapm.counter = 0;
+}
+
+
+INLINE void store_moves(const Board *b, Moves *m) {
+
+	U64 i = hash(b);
+	//double Que = (double)i / (double)HASHMOVESIZE;
+	//Que = trunc(Que);
+	//double Rem = (double)i - (double)HASHMOVESIZE * Que; 
+	//U64 index = (U64)(Rem-0.0001);
+	U64 index = i % HASHMOVESIZE;
+	if(hashmapm.zob[index] == 0){
+			hashmapm.zob[index] = index;
+			memcpy(&hashmapm.move[index], m, sizeof(Moves));		
+	}
+	
+	if(hashmapm.counter == 3){
+		hashmapm.counter = 0;
+		printf("\n\tClear moves !!!\n\n");
+		for(int  i = 0; i < HASHMOVESIZE; i++){
+			hashmapm.zob[i] = 0;
+		}
+	}
+	//Moves m;
+	//generate_posible_moves(&b, &m, 1, 1);
+	//memcpy(&m->moves, &m, sizeof(Moves));
+	}
+INLINE Moves return_moves(const Board *b, int *is_store) {
+	U64 a = hash(b);
+	double Que = (double)a / (double)HASHMOVESIZE;
+	Que = trunc(Que);
+	double Rem = (double)a - (double)HASHMOVESIZE * Que; 
+	U64 index = (U64)Rem;
+	if(hashmapm.zob[index] == a) {
+		*is_store = 1;
+		}
+	else {
+		*is_store = 0;
+		}
+
+	return hashmapm.move[index];
+	}
+
+
 
 
 
 
 
 INLINE void generate_posible_moves(const Board *__restrict__ bo, Moves *__restrict__ m,const int is_capture,const int is_quiet) {
+	int is_store = 0;
+	Moves move = return_moves(bo, &is_store);
+	if(is_store == 1 && move.counter != 0){
+			memcpy(m, &move, sizeof(Moves));
+			return;
+		}			
 
-	static int target, source; // SQUER WITCH MOVE STARTS FROM AND WHER TO GO
 
-	static U64 bitboard, attacks;
+	int target, source; // SQUER WITCH MOVE STARTS FROM AND WHER TO GO
+
+	U64 bitboard, attacks;
 
 	m->counter = 0;                //RESET COUNTER
 	//white pawn
@@ -2514,6 +2598,7 @@ INLINE void generate_posible_moves(const Board *__restrict__ bo, Moves *__restri
 	///* //ORDER OF MOVES FOR SEARCH
 	//sort_moves(bo, m);
 	sort_moves1(bo, m);
+	store_moves(bo, m);
 	//*/
 
 
@@ -2584,14 +2669,14 @@ static inline void make_move(Board *__restrict__ board, int move) {
 	//temp = board;  // LIKE MEMCPY WITHOUT ONE
 	//ENCODE(source, target, piece, promoted, capture, double, enpassant, castling)
 	//DECODE MOVE
-	int source    = SOURCE(move);
-	int target    = TARGET(move);
-	int piece     = PIECE(move);
-	int promoted  = PROMOTED(move);
-	int capture   = CAPTURE(move);
-	int doubl     = DOUBLE(move);
-	int en_pesant = ENPESANT(move);
-	int castling  = CASTLING(move);
+	const int source    = SOURCE(move);
+	const int target    = TARGET(move);
+	const int piece     = PIECE(move);
+	const int promoted  = PROMOTED(move);
+	const int capture   = CAPTURE(move);
+	const int doubl     = DOUBLE(move);
+	const int en_pesant = ENPESANT(move);
+	const int castling  = CASTLING(move);
 
 	POP(board->piece[piece], source);
 	SET(board->piece[piece], target); //WE WILL SEE
@@ -3043,8 +3128,8 @@ INLINE int evaluate( Board board) {
 #ifdef NNUE
 INLINE int evaluate_nn(Board *__restrict__ bo) {
 
-	static int pieces[33];
-	static int squares[33];
+	int pieces[33];
+	int squares[33];
 
 	const int wking=1, wqueen=2, wrook=3, wbishop= 4, wknight= 5, wpawn= 6;
 	const int bking=7, bqueen=8, brook=9, bbishop=10, bknight=11, bpawn=12;
@@ -3189,7 +3274,7 @@ static int quiescence(Hashmap hm, Board *__restrict__ board, int alpha, int beta
 		make_move(board,m.moves[i]);
 		int score = -quiescence(hm, board, -beta, -alpha);
 		//score -= m.value[i];
-		//store_position(hm, temp, score);
+		store_position(hm, board, score);
 		board->ply--;
 
 		if (score >= beta) {
@@ -3261,6 +3346,8 @@ static int negamax(Hashmap hm, Board *__restrict__ board, int alpha, int beta, i
 		//if(PIECE(m.moves[i]) )
 		int score;
 		score = -negamax(hm, board, -beta, -alpha, depth - 1);
+		//store_position(hm, board, score);
+		
 		//score += m.value[i];
 
 		board->ply--;
@@ -3355,7 +3442,7 @@ extern inline int search_position(Hashmap hm, Board *board,int depth) {
 	
 	int score;
 	score = negamax(hm, board, -inf, inf, depth);
-	
+	hashmapm.counter++;
 	
 //	/printf("Score is %d\n", score);
 	return score;
