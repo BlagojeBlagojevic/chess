@@ -28,13 +28,19 @@
 #define GREEN   0x00FF0000
 #define WHITEE  0x00800020
 #define NNUE
-//#define EVAL_SQUARE 1
+//#define EVAL_SQUARE 0.00001
 #include "engine.h"
 #include "load_pieces.h"
 
+
 //#include "move.h"
 
-#define NUM_OF_MOVES_FUTURE 4
+#define NUM_OF_MOVES_FUTURE 6
+
+
+
+Hashmap ma;
+
 
 void Draw_Board(SDL_Renderer *renderer) {
 
@@ -85,7 +91,7 @@ void Check_Is_Piece_Is_Dead(Piece *pieces, int X, int Y) {
 
 
 
-void Procss_Mouse_InputB(Board *b){
+void Procss_Mouse_InputB(Board *b) {
 	int X = 0, Y = 0;
 	SDL_GetMouseState(&X, &Y);
 	X = X / SQUER_SIZE;
@@ -97,58 +103,58 @@ void Procss_Mouse_InputB(Board *b){
 	//b->side = !b->side;
 	Moves target;
 	int counter = 0;
-	
+
 	generate_posible_moves(b, &m, 1, 1);
-	for(int i = 0; i < m.counter; i++){
+	for(int i = 0; i < m.counter; i++) {
 		//print_move(m.moves[i]);
 		//printf("\n\n\n");
-		if(SOURCE(m.moves[i]) == s){
+		if(SOURCE(m.moves[i]) == s) {
 			//printf("Exists");
 			print_move(m.moves[i]);
 			printf("\n-------------------\n");
-			target.moves[counter] = m.moves[i]; 
+			target.moves[counter] = m.moves[i];
 			counter++;
-		
+
+			}
 		}
-	}
 	//for(int i = 0; i < counter; i++){
 	//	print_move(target.moves[i]);
 	//	printf("\n\n");
 	//}
-		uint8_t isMake = FALSE;
-	  SDL_Event event;
-		while(!isMake) {
-			//SDL_Delay(10);
-			SDL_WaitEvent(&event);
-			if(event.type == SDL_MOUSEBUTTONDOWN){
-		//		printf("Making move\n\n");
-				SDL_GetMouseState(&X, &Y);
-				X = X / SQUER_SIZE;
-				Y = Y / SQUER_SIZE;
-				Squeres s = X + Y*8;
-				printf("X %d Y = %d Square %s\n", X, Y, squers_name[s]);
-				for(int i = 0; i < counter; i++){
-					if(TARGET(target.moves[i]) == s){
-						make_move(b, target.moves[i]);
-						break;
+	uint8_t isMake = FALSE;
+	SDL_Event event;
+	while(!isMake) {
+		//SDL_Delay(10);
+		SDL_PollEvent(&event);
+		if(event.type == SDL_MOUSEBUTTONDOWN) {
+			//		printf("Making move\n\n");
+			SDL_GetMouseState(&X, &Y);
+			X = X / SQUER_SIZE;
+			Y = Y / SQUER_SIZE;
+			Squeres s = X + Y*8;
+			printf("X %d Y = %d Square %s\n", X, Y, squers_name[s]);
+			for(int i = 0; i < counter; i++) {
+				if(TARGET(target.moves[i]) == s) {
+					make_move(b, target.moves[i]);
+					break;
 					}
 				}
-				isMake = TRUE;
-				
-				
+			isMake = TRUE;
+
+
 			}
-			
-			
-			if(event.type == SDL_QUIT) {
-				exit(-1);
-				//return -1;
-				}
+
+
+		if(event.type == SDL_QUIT) {
+			exit(-1);
+			//return -1;
 			}
-	
+		}
+
 	//exit(-1);
 	//b->side = !b->side;
 	//exit(-1);
-}
+	}
 
 
 
@@ -171,7 +177,7 @@ void Procss_Mouse_Input(Piece *pieces, Board *b) {
 			pieces[i].is_piece_selected = FALSE;
 			check_Piece_Selection = FALSE;
 			//size_t num_of_pieces = Piece_Loader(renderer,b,pieces);
-					
+
 			b->side = !b->side;
 			}
 
@@ -239,76 +245,75 @@ int main() {
 	srand(time(0));
 	//Piece_Loader(renderer,board,&pieces);
 	init_board_state(&board);
-	Hashmap ma;
-	init_hashmap(&ma);
 
+	init_hashmap(&ma);
+	init_hashmap_moves();
 	int side = rand()%2;
 	//int side = 1;
 	if(side == 0)
 		printf("White\n");
 	else
 		printf("Black\n");
-	//printf("Side %d", side);	
 
-	while(1) {
-		SDL_RenderClear(renderer);
-		Draw_Board(renderer);
-		//memset(&pieces,0,sizeof(Piece));
-		size_t num_of_pieces = Piece_Loader(renderer,board,pieces);
-		//system("pause");
-		//system("pause");
-		for(size_t i = 0; i < num_of_pieces; i++) {
-			SDL_RenderCopy(renderer, pieces[i].texture, NULL,&pieces[i].position);
-			}
+while(1) {
+	SDL_RenderClear(renderer);
+	Draw_Board(renderer);
+	//memset(&pieces,0,sizeof(Piece));
+	size_t num_of_pieces = Piece_Loader(renderer,board,pieces);
+	//system("pause");
+	//system("pause");
+	for(size_t i = 0; i < num_of_pieces; i++) {
+		SDL_RenderCopy(renderer, pieces[i].texture, NULL,&pieces[i].position);
+		}
 
-		SDL_RenderPresent(renderer);
-		
-		
-		SDL_Event event;
-		while(SDL_PollEvent(&event) ) {
-			
-			if(event.type == SDL_QUIT) {
-				return -1;
-				}
+	SDL_RenderPresent(renderer);
+
+
+	SDL_Event event;
+	while(SDL_PollEvent(&event) ) {
+
+		if(event.type == SDL_QUIT) {
+			return -1;
 			}
-			while(board.side == side){
-			while(SDL_PollEvent(&event) ) 
-				if(event.type == SDL_MOUSEBUTTONDOWN){
+		}
+	while(board.side == side) {
+		while(SDL_PollEvent(&event) )
+			if(event.type == SDL_MOUSEBUTTONDOWN) {
 				Procss_Mouse_InputB(&board);
-			
-			}
-			}
-		//generate_posible_moves(board, &m,1,1);
 
-		//int index = index_bestT(board, ma, m);
-		int score = search_position(ma, &board, NUM_OF_MOVES_FUTURE);
-		//print_move(board.best_move);
-		make_move(&board, board.best_move);
+				}
+		}
+	//generate_posible_moves(board, &m,1,1);
+
+	//int index = index_bestT(board, ma, m);
+	int score = search_position(ma, &board, NUM_OF_MOVES_FUTURE);
+	//print_move(board.best_move);
+	make_move(&board, board.best_move);
+	//system("pause");
+	init_iternal_state(&board);
+
+
+	//system("cls");
+	//print_board();
+
+	SDL_Delay(1000);
+
+	if(board.piece[k]==0 || (score == inf && board.side == WHITE)) {
+
+		printf("White wins!!!\n");
 		//system("pause");
-		init_iternal_state(&board);
-
-		
-		//system("cls");
-		//print_board();
-
-		SDL_Delay(1000);
-
-		if(board.piece[k]==0 || (score == inf && board.side == WHITE)) {
-
-			printf("White wins!!!\n");
-			//system("pause");
-			break;
-			}
-		if(board.piece[K]==0 || (score == -inf && board.side == BLACK)) {
-			printf("Blacks wins!!!\n");
-			//system("pause");
-			break;
-			}
-
-
+		break;
+		}
+	if(board.piece[K]==0 || (score == -inf && board.side == BLACK)) {
+		printf("Blacks wins!!!\n");
+		//system("pause");
+		break;
 		}
 
 
-	printf("Nesto");
-	return 0;
+	}
+
+
+printf("Nesto");
+return 0;
 	}
