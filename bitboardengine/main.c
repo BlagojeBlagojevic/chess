@@ -36,7 +36,7 @@
 
 //#include "move.h"
 
-#define NUM_OF_MOVES_FUTURE 6
+#define NUM_OF_MOVES_FUTURE 4
 
 
 
