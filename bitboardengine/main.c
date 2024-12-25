@@ -1,3 +1,4 @@
+
 #include<SDL2/SDL.h>
 #include<SDL2/SDL_hints.h>
 #include<SDL2/SDL_error.h>
@@ -247,7 +248,7 @@ int main() {
 	init_board_state(&board);
 
 	init_hashmap(&ma);
-	init_hashmap_moves();
+//	init_hashmap_moves();
 	int side = rand()%2;
 	//int side = 1;
 	if(side == 0)
