@@ -84,8 +84,14 @@ typedef enum trap {
 //#define INLINE static
 
 //GET NUMBER OF BITS IN BITBOARD
+#if defined(__GNUC__) || defined(__clang__)
+INLINE U64 NUM(U64 bitboard) {
+	return __builtin_popcountll(bitboard);
+	}
+#else
 INLINE int NUM(U64 bitboard) {
-
+	printf("Num\n");
+	system("pause");
 	int count = 0;
 	while(bitboard) {
 		count++;
@@ -96,8 +102,9 @@ INLINE int NUM(U64 bitboard) {
 	printf("\nNUM OF BITS %d\n", count);
 #endif
 	return count;
-
 	}
+#endif
+
 //get lsb bit in bitboard
 #define LOG_LSB 0
 INLINE int LSB(U64 bitboard) {
@@ -617,7 +624,7 @@ void calculate_above(){
 #define LOG_ATTACK 0
 
 //WHITE PAWN ATTACKS
-static U64 white_pawn_attack_table[64];
+U64 white_pawn_attack_table[64];
 
 void init_white_pawn_attack_table() {
 
@@ -638,7 +645,7 @@ void init_white_pawn_attack_table() {
 	}
 
 //BLACK PAWN ATTACKS
-static U64 black_pawn_attack_table[64];
+U64 black_pawn_attack_table[64];
 
 void init_black_pawn_attack_table() {
 
@@ -659,7 +666,7 @@ void init_black_pawn_attack_table() {
 	}
 
 //knight attack table
-static U64 knight_attack_table[64];
+U64 knight_attack_table[64];
 
 void init_knight_attack_table() {
 	Squeres position = 0;
@@ -685,7 +692,7 @@ void init_knight_attack_table() {
 	}
 
 //bishop attack table
-static U64 bishop_attack_table[64];
+U64 bishop_attack_table[64];
 
 void init_bishop_attack_table() {
 	Squeres position = 0;
@@ -717,7 +724,7 @@ void init_bishop_attack_table() {
 	}
 
 //ROOK ATTACK TABLE
-static U64 rook_attack_table[64];
+U64 rook_attack_table[64];
 
 void init_rook_attack_table() {
 
@@ -737,7 +744,7 @@ void init_rook_attack_table() {
 	}
 
 //QUEAN ATTACK TABLE
-static U64 quean_attack_table[64];
+U64 quean_attack_table[64];
 
 void init_quean_attack_table() {
 	for(size_t i = 0; i < 64; i++) {
@@ -750,7 +757,7 @@ void init_quean_attack_table() {
 		}
 	}
 
-static U64 king_attack_table[64];
+U64 king_attack_table[64];
 
 void init_king_attack_table() {
 
@@ -916,7 +923,7 @@ INLINE U64 get_quean_moves(int squere, U64 pieces) {
 
 //bishop_mask
 //rook_mask
-static U64 bishop_mask[64],rook_mask[64];
+U64 bishop_mask[64],rook_mask[64];
 Trap init_masks() {
 	// USAGE if(init_masks() != TRAP_NONINIT)
 
@@ -1275,8 +1282,8 @@ void print_magic() {
 
 
 //
-static U64 bishop_attacks[64][512];
-static U64 rook_attacks[64][4096];
+U64 bishop_attacks[64][512];
+U64 rook_attacks[64][4096];
 
 
 //THIS FUNCTION POPULATE bishop and rook atacks depending of position
@@ -1686,6 +1693,7 @@ INLINE void rate_moves(const Board *__restrict__ bo, Moves *__restrict__ m) {
 	}
 
 
+
 INLINE void sort_moves1(const Board *__restrict__ bo, Moves *__restrict__ m) {
 	rate_moves(bo, m);
 
@@ -1736,7 +1744,7 @@ typedef struct {
 	} Hashmap;
 
 
-static U64 zob_table[64][12];
+U64 zob_table[64][12];
 
 void init_hashmap(Hashmap *__restrict__ m) {
 
@@ -2578,7 +2586,7 @@ void print_move_list(Moves *move_list) {
 
 #define LOG_MOVES 0
 // FUNCTION USED TO GENARTES MOVE AND RETURN IT WE ACCEPT BOARD STRUCTURE AS INPUT
-__attribute__((always_inline))
+
 static inline void make_move(Board *__restrict__ board, int move) {
 	Board temp;// = &board;
 	memcpy(&temp, board, sizeof(Board));
@@ -2744,7 +2752,7 @@ static inline void make_move(Board *__restrict__ board, int move) {
 	//return TRAP_ILEGAL;
 	//}
 
-	static int sq;
+	int sq;
 	if(board->side == white)
 		sq = LSB(board->piece[k]);
 	else
@@ -2771,7 +2779,7 @@ static inline void make_move(Board *__restrict__ board, int move) {
 #define LOG_EVALUATION 0
 
 #define inf 10000000
-int mg_table[6][64] = {{
+const int mg_table[6][64] = {{
 		0,   0,   0,   0,   0,   0,  0,   0,
 		98, 134,  61,  95,  68, 126, 34, -11,
 		-6,   7,  26,  31,  65,  56, 25, -20,
@@ -3022,6 +3030,7 @@ INLINE int evaluate( Board board) {
 
 //TEMP MUST BE DECLARED
 #define copy_board() memcpy(&temp,  board, sizeof(Board))
+//#define copy_board() memcpy(&temp,  board, sizeof(Board))
 #define take_board() memcpy(board, &temp, sizeof(Board))
 
 /**
@@ -3165,7 +3174,7 @@ static inline int quiescence(Hashmap hm, Board *__restrict__ board, int alpha, i
 	store_position(hm, board, evaluation);
 #endif
 #ifndef NNUE
-	int evaluation = evaluate(board);
+	int evaluation = evaluate(*board);
 #endif
 	if (evaluation >= beta) {
 		//store_position(hm, board, beta);
