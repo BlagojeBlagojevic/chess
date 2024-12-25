@@ -1,3 +1,4 @@
+
 #ifndef ENGINE_H
 #define ENGINE_H
 
@@ -77,10 +78,10 @@ typedef enum trap {
 //prints lsb bit of bitboard
 #define PRINT(bitboard) printf("\nLSB BIT IS %s\n",squers_name[NUM((bitboard & -bitboard) - 1)])
 
-#define LOG_COUNT 0
+//#define LOG_COUNT 0
 #define INLINE __attribute__((always_inline))\
 	static inline
-//#define INLINE static inline
+//#define INLINE static
 
 //GET NUMBER OF BITS IN BITBOARD
 INLINE int NUM(U64 bitboard) {
@@ -1010,8 +1011,8 @@ INLINE U64 rand64() {
 //static U64 seed = 1234;
 //INLINE U64 rand64(){
 
-    
- //   return (seed = (164603309694725029ull * seed) % 14738995463583502973ull);
+
+//   return (seed = (164603309694725029ull * seed) % 14738995463583502973ull);
 
 //}
 
@@ -1412,7 +1413,7 @@ int print_is_square_attacked(int side, int square) {
 		print_board();
 		printf("\nSquare is not attacked %s\n ", squers_name[square]);
 		}
-
+	return 0;
 	}
 
 
@@ -1721,9 +1722,9 @@ INLINE void sort_moves1(const Board *__restrict__ bo, Moves *__restrict__ m) {
 //IT WILL HAVE 100MB OF MEMORY(SIZE) AND USE ZOBRIST HASH FOR ACCESING BOARD VALUE
 
 //#define HASHSIZE 1073741800
-#define HASHSIZE 107374182
+//#define HASHSIZE 107374182
 
-//#define HASHSIZE 107374
+#define HASHSIZE 1000000
 //4157458668
 
 typedef struct {
@@ -1799,11 +1800,11 @@ INLINE int return_score(Hashmap m,const Board *b, int *is_store) {
 
 
 
-INLINE void generate_posible_moves(const Board *__restrict__ bo, Moves *__restrict__ m,const int is_capture,const int is_quiet) {
+void generate_posible_moves(const Board *__restrict__ bo, Moves *__restrict__ m,const int is_capture,const int is_quiet) {
 
-	static int target, source; // SQUER WITCH MOVE STARTS FROM AND WHER TO GO
+	int target, source; // SQUER WITCH MOVE STARTS FROM AND WHER TO GO
 
-	static U64 bitboard, attacks;
+	U64 bitboard, attacks;
 
 	m->counter = 0;                //RESET COUNTER
 	//white pawn
@@ -3043,8 +3044,8 @@ INLINE int evaluate( Board board) {
 #ifdef NNUE
 INLINE int evaluate_nn(Board *__restrict__ bo) {
 
-	static int pieces[33];
-	static int squares[33];
+	int pieces[33];
+	int squares[33];
 
 	const int wking=1, wqueen=2, wrook=3, wbishop= 4, wknight= 5, wpawn= 6;
 	const int bking=7, bqueen=8, brook=9, bbishop=10, bknight=11, bpawn=12;
@@ -3147,11 +3148,9 @@ INLINE int evaluate_nn(Board *__restrict__ bo) {
 	}
 #endif
 
-static int quiescence(Hashmap hm, Board *__restrict__ board, int alpha, int beta) {
+static inline int quiescence(Hashmap hm, Board *__restrict__ board, int alpha, int beta) {
 
-	Board temp;
-	Moves m;
-	copy_board();
+
 
 
 
@@ -3160,25 +3159,26 @@ static int quiescence(Hashmap hm, Board *__restrict__ board, int alpha, int beta
 	if(is_store == 1)
 		return sc;
 
-
-
-
-
 	//int evaluation = evaluate(temp);
 #ifdef NNUE
 	int evaluation = evaluate_nn(board);
+	store_position(hm, board, evaluation);
 #endif
 #ifndef NNUE
-	int evaluation = evaluate(temp);
+	int evaluation = evaluate(board);
 #endif
 	if (evaluation >= beta) {
-		store_position(hm, board, beta);
+		//store_position(hm, board, beta);
 		return beta;
 		}
 
 	if (evaluation > alpha) {
 		alpha = evaluation;
 		}
+
+	Board temp;
+	Moves m;
+	copy_board();
 
 	generate_posible_moves(&temp, &m,1,0);
 
@@ -3207,6 +3207,7 @@ static int quiescence(Hashmap hm, Board *__restrict__ board, int alpha, int beta
 		//else
 		return alpha;
 		}
+	store_position(hm, board, alpha);
 	return alpha;
 	}
 
@@ -3225,19 +3226,6 @@ static int negamax(Hashmap hm, Board *__restrict__ board, int alpha, int beta, i
 		int sc = return_score(hm, board, &is_store);
 		if(is_store == 1)
 			return sc;
-
-
-		//	int score = quiescence(hm, board, alpha, beta);
-		//store_position(hm, *board, score);
-		//int is_store = 0;
-		//int sc = return_score(hm, temp, &is_store);
-		//if(is_store == 1)
-		//	return sc;
-		//int score = evaluate(temp);
-		//store_position(hm, *board, score);
-		//int score = evaluate_nn(board);
-		//return score;
-
 		return quiescence(hm, board, alpha, beta);
 
 
@@ -3266,7 +3254,7 @@ static int negamax(Hashmap hm, Board *__restrict__ board, int alpha, int beta, i
 		board->ply--;
 		take_board();
 		if (score >= beta) {
-			store_position(hm, board, beta);
+		//	store_position(hm, board, beta);
 			return beta;
 			}
 
@@ -3281,7 +3269,7 @@ static int negamax(Hashmap hm, Board *__restrict__ board, int alpha, int beta, i
 	if (old_alpha != alpha)
 		board->best_move = best_sofar;
 
-	store_position(hm, board, alpha);
+	//store_position(hm, board, alpha);
 	return alpha;
 
 
@@ -3352,11 +3340,11 @@ extern inline int search_position(Hashmap hm, Board *board,int depth) {
 	// find best move within a given position
 	//int range = negamax(hm, board, -inf, inf, 2);
 	//int range = evaluate_nn(board);
-	
+
 	int score;
 	score = negamax(hm, board, -inf, inf, depth);
-	
-	
+
+
 //	/printf("Score is %d\n", score);
 	return score;
 	}
