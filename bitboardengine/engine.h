@@ -74,7 +74,7 @@ typedef enum trap {
 
 //POP(bitboard,h1);
 #define POP(bitboard, square)  (GET(bitboard, square) ? bitboard ^= (1ULL << square) : 0)
-
+//#define POP(bitboard, square) ((bitboard) &= ~(1ULL << (square)))
 //prints lsb bit of bitboard
 #define PRINT(bitboard) printf("\nLSB BIT IS %s\n",squers_name[NUM((bitboard & -bitboard) - 1)])
 
@@ -84,8 +84,14 @@ typedef enum trap {
 //#define INLINE static inline
 
 //GET NUMBER OF BITS IN BITBOARD
+#if defined(__GNUC__) || defined(__clang__)
+INLINE U64 NUM(U64 bitboard) {
+	return __builtin_popcountll(bitboard);
+	}
+#else
 INLINE int NUM(U64 bitboard) {
-
+	printf("Num\n");
+	system("pause");
 	int count = 0;
 	while(bitboard) {
 		count++;
@@ -96,9 +102,12 @@ INLINE int NUM(U64 bitboard) {
 	printf("\nNUM OF BITS %d\n", count);
 #endif
 	return count;
-
 	}
+#endif
 //get lsb bit in bitboard
+
+
+
 #define LOG_LSB 0
 INLINE int LSB(U64 bitboard) {
 	if(bitboard) {
@@ -106,6 +115,7 @@ INLINE int LSB(U64 bitboard) {
 #if LOG_LSB
 		PRINT(bitboard);
 #endif
+		//return fls(bitboard);
 		return NUM((bitboard & -bitboard) - 1);
 		}
 	else {
@@ -1011,8 +1021,8 @@ INLINE U64 rand64() {
 //static U64 seed = 1234;
 //INLINE U64 rand64(){
 
-    
- //   return (seed = (164603309694725029ull * seed) % 14738995463583502973ull);
+
+//   return (seed = (164603309694725029ull * seed) % 14738995463583502973ull);
 
 //}
 
@@ -1732,7 +1742,7 @@ typedef struct {
 	int   *__restrict__  score;
 	U64   *__restrict__ zob;
 	//Moves *moves;
-	U64 counter
+	U64 counter;
 	} Hashmap;
 
 
@@ -1776,19 +1786,19 @@ INLINE void store_position(Hashmap m,const Board *b, int score) {
 	//U64 index = i % HASHSIZE;
 	double Que = (double)i / (double)HASHSIZE;
 	Que = trunc(Que);
-	double Rem = (double)i - (double)HASHSIZE * Que; 
+	double Rem = (double)i - (double)HASHSIZE * Que;
 	U64 index = (U64)Rem;
 	m.zob[index] = i;
 	m.score[index] = score;
 	m.counter++;
 	//printf("\tStored %d\n", index);
-	if(m.counter >= HASHSIZE / 2){
+	if(m.counter >= HASHSIZE / 2) {
 		printf("\n\tClear hashmap !!!\n\n");
 		m.counter = 0;
-		for(int i = 0; i < HASHSIZE; i++){
+		for(int i = 0; i < HASHSIZE; i++) {
 			m.zob[i] = 0;
+			}
 		}
-	}
 	//Moves m;
 	//generate_posible_moves(&b, &m, 1, 1);
 	//memcpy(&m->moves, &m, sizeof(Moves));
@@ -1799,7 +1809,7 @@ INLINE int return_score(Hashmap m,const Board *b, int *is_store) {
 	//printf("Index %d", index);
 	double Que = (double)a / (double)HASHSIZE;
 	Que = trunc(Que);
-	double Rem = (double)a - (double)HASHSIZE * Que; 
+	double Rem = (double)a - (double)HASHSIZE * Que;
 	U64 index = (U64)Rem;
 	if(m.zob[index] == a) {
 		*is_store = 1;
@@ -1817,17 +1827,17 @@ typedef struct {
 	Moves *move;
 	U64   *zob;
 	U64 counter;
-}HashMapM;
+	} HashMapM;
 
 
 HashMapM hashmapm;
 
 #define HASHMOVESIZE 100000
-void init_hashmap_moves(){
-		hashmapm.move  = (Moves*)calloc(HASHMOVESIZE, sizeof(Moves));
-		hashmapm.zob   = (U64*)calloc(HASHMOVESIZE, sizeof(U64));
-		hashmapm.counter = 0;
-}
+void init_hashmap_moves() {
+	hashmapm.move  = (Moves*)calloc(HASHMOVESIZE, sizeof(Moves));
+	hashmapm.zob   = (U64*)calloc(HASHMOVESIZE, sizeof(U64));
+	hashmapm.counter = 0;
+	}
 
 
 INLINE void store_moves(const Board *b, Moves *m) {
@@ -1835,21 +1845,21 @@ INLINE void store_moves(const Board *b, Moves *m) {
 	U64 i = hash(b);
 	//double Que = (double)i / (double)HASHMOVESIZE;
 	//Que = trunc(Que);
-	//double Rem = (double)i - (double)HASHMOVESIZE * Que; 
+	//double Rem = (double)i - (double)HASHMOVESIZE * Que;
 	//U64 index = (U64)(Rem-0.0001);
 	U64 index = i % HASHMOVESIZE;
-	if(hashmapm.zob[index] == 0){
-			hashmapm.zob[index] = index;
-			memcpy(&hashmapm.move[index], m, sizeof(Moves));		
-	}
-	
-	if(hashmapm.counter == 3){
+	if(hashmapm.zob[index] == 0) {
+		hashmapm.zob[index] = index;
+		memcpy(&hashmapm.move[index], m, sizeof(Moves));
+		}
+
+	if(hashmapm.counter == 4) {
 		hashmapm.counter = 0;
 		printf("\n\tClear moves !!!\n\n");
-		for(int  i = 0; i < HASHMOVESIZE; i++){
+		for(int  i = 0; i < HASHMOVESIZE; i++) {
 			hashmapm.zob[i] = 0;
+			}
 		}
-	}
 	//Moves m;
 	//generate_posible_moves(&b, &m, 1, 1);
 	//memcpy(&m->moves, &m, sizeof(Moves));
@@ -1858,7 +1868,7 @@ INLINE Moves return_moves(const Board *b, int *is_store) {
 	U64 a = hash(b);
 	double Que = (double)a / (double)HASHMOVESIZE;
 	Que = trunc(Que);
-	double Rem = (double)a - (double)HASHMOVESIZE * Que; 
+	double Rem = (double)a - (double)HASHMOVESIZE * Que;
 	U64 index = (U64)Rem;
 	if(hashmapm.zob[index] == a) {
 		*is_store = 1;
@@ -1879,10 +1889,10 @@ INLINE Moves return_moves(const Board *b, int *is_store) {
 INLINE void generate_posible_moves(const Board *__restrict__ bo, Moves *__restrict__ m,const int is_capture,const int is_quiet) {
 	int is_store = 0;
 	Moves move = return_moves(bo, &is_store);
-	if(is_store == 1 && move.counter != 0){
-			memcpy(m, &move, sizeof(Moves));
-			return;
-		}			
+	if(is_store == 1 && move.counter != 0) {
+		memcpy(m, &move, sizeof(Moves));
+		return;
+		}
 
 
 	int target, source; // SQUER WITCH MOVE STARTS FROM AND WHER TO GO
@@ -1896,7 +1906,7 @@ INLINE void generate_posible_moves(const Board *__restrict__ bo, Moves *__restri
 
 		bitboard = bo->piece[P];
 
-		while(bitboard) {
+		for(; bitboard != 0;) {
 			//system("pause");
 			source = LSB(bitboard);
 			target = source - 8;   //ONE SQUARE FORWARD DIFERENCS IS 8
@@ -2049,7 +2059,7 @@ INLINE void generate_posible_moves(const Board *__restrict__ bo, Moves *__restri
 
 
 		//CHECK OTHER KING MOVES
-		while(bitboard) {
+		for(; bitboard != 0;) {
 			source = LSB(bitboard);
 			//WHERE IS NO WHITE PIECE
 			attacks = king_attack_table[source] & ~(bo->position_white);
@@ -2094,7 +2104,7 @@ INLINE void generate_posible_moves(const Board *__restrict__ bo, Moves *__restri
 		//white knight
 
 		bitboard = bo->piece[N];
-		while(bitboard) {
+		for(; bitboard != 0;) {
 			source = LSB(bitboard);
 			//WHERE IS NO WHITE PIECE
 			attacks = knight_attack_table[source] & ~(bo->position_white);
@@ -2254,7 +2264,7 @@ INLINE void generate_posible_moves(const Board *__restrict__ bo, Moves *__restri
 	if(bo->side == black) {
 
 		bitboard = bo->piece[p];
-		while(bitboard) {
+		for(; bitboard != 0;) {
 
 			source = LSB(bitboard);
 			target = source + 8;   //ONE SQUARE FORWARD DIFERENCS IS 8
@@ -2402,8 +2412,7 @@ INLINE void generate_posible_moves(const Board *__restrict__ bo, Moves *__restri
 					m->moves[m->counter++] = ENCODE(source, c8, k, 0, 0, 0, 0, 1);
 				}
 			}
-
-		while(bitboard) {
+		for(; bitboard != 0;) {
 			source = LSB(bitboard);
 			//WHERE IS NO WHITE PIECE
 			attacks = king_attack_table[source] & ~(bo->position_black);
@@ -2443,7 +2452,7 @@ INLINE void generate_posible_moves(const Board *__restrict__ bo, Moves *__restri
 
 		bitboard = bo->piece[n];
 
-		while(bitboard) {
+		for(;bitboard != 0;) {
 			source = LSB(bitboard);
 			//WHERE IS NO WHITE PIECE
 			attacks = knight_attack_table[source] & ~(bo->position_black);
@@ -2522,7 +2531,7 @@ INLINE void generate_posible_moves(const Board *__restrict__ bo, Moves *__restri
 		//black rook
 
 		bitboard = bo->piece[r];
-		while(bitboard) {
+		for(;bitboard != 0;) {
 			source = LSB(bitboard);
 			//GET ROOK ATTACKS
 			attacks = get_rook_moves_magic(source, bo->position_alll) & ~(bo->position_black);
@@ -3232,7 +3241,7 @@ INLINE int evaluate_nn(Board *__restrict__ bo) {
 	}
 #endif
 
-static int quiescence(Hashmap hm, Board *__restrict__ board, int alpha, int beta) {
+static inline int quiescence(Hashmap hm, Board *__restrict__ board, int alpha, int beta) {
 
 	Board temp;
 	Moves m;
@@ -3268,13 +3277,13 @@ static int quiescence(Hashmap hm, Board *__restrict__ board, int alpha, int beta
 	generate_posible_moves(&temp, &m,1,0);
 
 
-	for (int i = 0; i < m.counter; i++) {
+	for (uint32_t i = 0; i < m.counter; i++) {
 
 		board->ply++;
 		make_move(board,m.moves[i]);
 		int score = -quiescence(hm, board, -beta, -alpha);
 		//score -= m.value[i];
-		store_position(hm, board, score);
+		//store_position(hm, board, score);
 		board->ply--;
 
 		if (score >= beta) {
@@ -3282,9 +3291,9 @@ static int quiescence(Hashmap hm, Board *__restrict__ board, int alpha, int beta
 			return beta;
 			}
 		take_board();
+
 		if (score > alpha) {
 			alpha = score;
-
 			}
 
 		//copy_
@@ -3299,13 +3308,7 @@ static int negamax(Hashmap hm, Board *__restrict__ board, int alpha, int beta, i
 	board->ply = 0;
 	Board temp;
 	copy_board();
-
-
-
-
 	if(depth == 0) {
-
-
 		int is_store = 0;
 		int sc = return_score(hm, board, &is_store);
 		if(is_store == 1)
@@ -3324,8 +3327,6 @@ static int negamax(Hashmap hm, Board *__restrict__ board, int alpha, int beta, i
 		//return score;
 
 		return quiescence(hm, board, alpha, beta);
-
-
 		}
 
 
@@ -3333,23 +3334,14 @@ static int negamax(Hashmap hm, Board *__restrict__ board, int alpha, int beta, i
 	int old_alpha = alpha;
 
 	Moves m;
-	generate_posible_moves(&temp, &m,1,1);
-
-
-
+	generate_posible_moves(&temp, &m, 1, 1);
 	for(int i = 0; i < m.counter; i++) {
 
 		make_move(board, m.moves[i]);
-
-
-
 		//if(PIECE(m.moves[i]) )
 		int score;
 		score = -negamax(hm, board, -beta, -alpha, depth - 1);
-		//store_position(hm, board, score);
-		
-		//score += m.value[i];
-
+		//store_position(hm, board, score*m.value[i]);
 		board->ply--;
 		take_board();
 		if (score >= beta) {
@@ -3365,6 +3357,7 @@ static int negamax(Hashmap hm, Board *__restrict__ board, int alpha, int beta, i
 			}
 
 		}
+
 	if (old_alpha != alpha)
 		board->best_move = best_sofar;
 
@@ -3400,7 +3393,7 @@ int negamax_advanced(Hashmap hm, Board *board, int alpha, int beta, int depth) {
 	Moves m;
 	generate_posible_moves(&temp, &m,1,1);
 
-	for(int i = 0; i < m.counter; i++) {
+	for(uint32_t i = 0; i < m.counter; i++) {
 		make_move(board, m.moves[i]);
 		int score;
 		if(CAPTURE(m.moves[i]))
@@ -3439,14 +3432,14 @@ extern inline int search_position(Hashmap hm, Board *board,int depth) {
 	// find best move within a given position
 	//int range = negamax(hm, board, -inf, inf, 2);
 	//int range = evaluate_nn(board);
-	
-	int score;
-	score = negamax(hm, board, -inf, inf, depth);
+
+	int score = negamax(hm, board, -inf, inf, depth);
+
+
 	hashmapm.counter++;
-	
+
 //	/printf("Score is %d\n", score);
 	return score;
 	}
 
 #endif
-
